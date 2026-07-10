@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-neon-red: #ff003c;
+  --color-neon-dark: #0a0000;
+  --color-neon-blood: #8b0000;
+}
+
+@keyframes water-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-neon-flow {
+  background: linear-gradient(270deg, #ff003c, #8b0000, #ff003c, #3a0000);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: water-flow 4s ease infinite;
+}
+
+.border-neon-flow {
+  background: linear-gradient(270deg, #ff003c, #8b0000, #ff003c);
+  background-size: 300% 300%;
+  animation: water-flow 4s ease infinite;
+}
+
+body {
+  background-color: #030000;
+  color: #ededed;
+  font-family: Arial, Helvetica, sans-serif;
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <title>Suporte e Contato | StashFlix</title>
+  </head>
+  <body>
+    <header>
+      <div class="logo-container">
+        <h1 class="logo-text">STASHFLIX</h1>
+      </div>
+      <nav>
+        <a href="/index.html">Início</a>
+        <a href="/privacy.html">Privacidade</a>
+        <a href="/terms.html">Termos</a>
+        <a href="/support.html">Suporte</a>
+      </nav>
+    </header>
+
+    <main class="legal-container">
+      <h1>Suporte e Contato</h1>
+      <p>Nossa equipe está pronta para ajudar você a proteger o que importa.</p>
+
+      <h2>Precisa de ajuda?</h2>
+      <p>Se você encontrou algum problema no aplicativo, tem dúvidas sobre faturamento de assinaturas, ou precisa reportar uma vulnerabilidade, entre em contato conosco através do e-mail abaixo:</p>
+      
+      <p style="margin-top: 2rem; font-size: 1.2rem; font-weight: 600;">
+        Email de Suporte:<br>
+        <a href="mailto:suporte@stashflix.app">suporte@stashflix.app</a>
+      </p>
+
+      <h2>Perguntas Frequentes (FAQ)</h2>
+      <ul>
+        <li><strong>Esqueci meu PIN, como recupero?</strong><br>O StashFlix usa criptografia local baseada no seu PIN. Se você não vinculou um e-mail de recuperação durante o cadastro nas configurações, infelizmente os dados estão criptografados de forma irreversível.</li>
+        <li><strong>Meus arquivos estão salvos na nuvem?</strong><br>Não. Por motivos de segurança e privacidade, os dados nunca saem do seu celular. Todo o processamento é On-Device.</li>
+      </ul>
+    </main>
+
+    <footer>
+      <div class="footer-links">
+        <a href="/privacy.html">Política de Privacidade</a>
+        <a href="/terms.html">Termos de Uso</a>
+        <a href="/support.html">Suporte e Contato</a>
+      </div>
+      <p>&copy; <span id="year"></span> StashFlix App. Todos os direitos reservados.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

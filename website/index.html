@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="description" content="StashFlix - O cofre digital impenetrável com criptografia militar AES-256." />
+    <title>StashFlix | Cofre Digital Seguro</title>
+  </head>
+  <body>
+    <header>
+      <div class="logo-container">
+        <!-- Logo file should be added later -->
+        <h1 class="logo-text">STASHFLIX</h1>
+      </div>
+      <nav>
+        <a href="#features">Recursos</a>
+        <a href="/privacy.html">Privacidade</a>
+        <a href="/terms.html">Termos</a>
+        <a href="/support.html">Suporte</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Seus Segredos.<br>Criptografia Militar.</h1>
+        <p>Proteja suas fotos, vídeos e arquivos mais sensíveis em um cofre digital blindado com criptografia on-device AES-256. Privacidade absoluta na palma da sua mão.</p>
+        <a href="#" class="cta-button" onclick="alert('O app estará disponível em breve na Google Play Store!')">BAIXAR NA PLAY STORE</a>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-links">
+        <a href="/privacy.html">Política de Privacidade</a>
+        <a href="/terms.html">Termos de Uso</a>
+        <a href="/support.html">Suporte e Contato</a>
+      </div>
+      <p>&copy; <span id="year"></span> StashFlix App. Todos os direitos reservados.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

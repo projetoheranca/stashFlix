@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <title>Termos de Uso | StashFlix</title>
+  </head>
+  <body>
+    <header>
+      <div class="logo-container">
+        <h1 class="logo-text">STASHFLIX</h1>
+      </div>
+      <nav>
+        <a href="/index.html">Início</a>
+        <a href="/privacy.html">Privacidade</a>
+        <a href="/terms.html">Termos</a>
+        <a href="/support.html">Suporte</a>
+      </nav>
+    </header>
+
+    <main class="legal-container">
+      <h1>Termos e Condições de Uso</h1>
+      <p>Última atualização: 10 de Julho de 2026</p>
+
+      <h2>1. Aceitação dos Termos</h2>
+      <p>Ao baixar ou usar o aplicativo StashFlix, estes termos se aplicam automaticamente a você - portanto, você deve certificar-se de lê-los cuidadosamente antes de usar o aplicativo.</p>
+
+      <h2>2. Uso do Aplicativo</h2>
+      <p>O aplicativo StashFlix é fornecido "como está". Embora façamos o máximo para garantir que a criptografia seja inquebrável e os dados estejam seguros, o uso do aplicativo é de sua total responsabilidade.</p>
+
+      <h2>3. Responsabilidade do Usuário</h2>
+      <p>Você é o único responsável pela guarda do seu PIN (senha). Como os dados são criptografados localmente usando essa senha, a perda do PIN pode resultar em perda total dos seus arquivos. A StashFlix não se responsabiliza por perda de dados por esquecimento de senha, perda de dispositivo ou danos físicos ao hardware.</p>
+
+      <h2>4. Assinaturas e Compras no Aplicativo</h2>
+      <p>O StashFlix pode oferecer planos "Premium/PRO" através de assinaturas processadas pelas lojas de aplicativos (Google Play Store). O gerenciamento, cancelamento e política de reembolso dessas assinaturas estão sujeitos aos termos da respectiva loja.</p>
+
+      <h2>5. Modificações no Serviço</h2>
+      <p>A StashFlix reserva-se o direito de fazer alterações no aplicativo ou cobrar por seus serviços, a qualquer momento e por qualquer motivo.</p>
+    </main>
+
+    <footer>
+      <div class="footer-links">
+        <a href="/privacy.html">Política de Privacidade</a>
+        <a href="/terms.html">Termos de Uso</a>
+        <a href="/support.html">Suporte e Contato</a>
+      </div>
+      <p>&copy; <span id="year"></span> StashFlix App. Todos os direitos reservados.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

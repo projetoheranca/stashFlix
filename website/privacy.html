@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <title>Política de Privacidade | StashFlix</title>
+  </head>
+  <body>
+    <header>
+      <div class="logo-container">
+        <h1 class="logo-text">STASHFLIX</h1>
+      </div>
+      <nav>
+        <a href="/index.html">Início</a>
+        <a href="/privacy.html">Privacidade</a>
+        <a href="/terms.html">Termos</a>
+        <a href="/support.html">Suporte</a>
+      </nav>
+    </header>
+
+    <main class="legal-container">
+      <h1>Política de Privacidade</h1>
+      <p>Última atualização: 10 de Julho de 2026</p>
+
+      <h2>1. Coleta e Uso de Dados</h2>
+      <p>O <strong>StashFlix</strong> é um aplicativo focado inteiramente na privacidade do usuário. Nossa arquitetura "On-Device" significa que <strong>todas as suas fotos, vídeos e arquivos são processados, criptografados e armazenados apenas no seu próprio dispositivo</strong>. Nós não fazemos upload, não enviamos para nossos servidores, nem temos qualquer acesso ao conteúdo que você guarda no cofre.</p>
+
+      <h2>2. Permissões Solicitadas</h2>
+      <ul>
+        <li><strong>Câmera:</strong> Necessária para capturar novas fotos diretamente para dentro do cofre e para a funcionalidade "Anti-Invasão" (Tirar foto de quem errar a senha).</li>
+        <li><strong>Microfone:</strong> Utilizado na função Anti-Invasão para gravar áudio ambiente em tentativas de acesso não autorizado.</li>
+        <li><strong>Armazenamento:</strong> Necessário para importar arquivos da sua galeria e exportá-los de volta.</li>
+      </ul>
+
+      <h2>3. Criptografia AES-256</h2>
+      <p>Nós utilizamos criptografia AES-256 bits gerada a partir da senha (PIN) que você definiu. Se você esquecer o PIN e não possuir um e-mail de recuperação vinculado, <strong>os dados serão permanentemente perdidos</strong>. A StashFlix não tem a capacidade técnica de recuperar seus arquivos.</p>
+
+      <h2>4. Compartilhamento de Dados</h2>
+      <p>Nós não vendemos, alugamos ou compartilhamos dados com terceiros. A única comunicação de rede que o aplicativo realiza é com os serviços de infraestrutura (Firebase/Google) estritamente para autenticação de contas e verificação de assinaturas (compras no aplicativo).</p>
+
+      <h2>5. Contato</h2>
+      <p>Para dúvidas sobre privacidade, entre em contato em: <a href="mailto:suporte@stashflix.app">suporte@stashflix.app</a>.</p>
+    </main>
+
+    <footer>
+      <div class="footer-links">
+        <a href="/privacy.html">Política de Privacidade</a>
+        <a href="/terms.html">Termos de Uso</a>
+        <a href="/support.html">Suporte e Contato</a>
+      </div>
+      <p>&copy; <span id="year"></span> StashFlix App. Todos os direitos reservados.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>
