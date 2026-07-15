@@ -1,6 +1,6 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth'; // Cache invalidation
-import { getFirestore } from 'firebase/firestore';
+import { initializeAuth, getAuth, getReactNativePersistence } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -19,22 +19,22 @@ const firebaseConfig = {
 
 // Initialize Firebase only if not already initialized
 let app;
+let auth: any;
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
+  // Using AsyncStorage for persistence in React Native / Expo
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+  });
 } else {
   app = getApp();
+  auth = getAuth(app);
 }
 
-// Initialize Firebase Authentication and get a reference to the service
-// Using AsyncStorage for persistence in React Native / Expo
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
-
-// Initialize Cloud Firestore and get a reference to the service
-const db = getFirestore(app);
+// Initialize Firebase Realtime Database
+const rtdb = getDatabase(app);
 
 // Initialize Firebase Storage
 const storage = getStorage(app);
 
-export { app, auth, db, storage };
+export { app, auth, rtdb, storage };

@@ -61,7 +61,6 @@
           "savePhotosPermission": "Permita que o StashFlix salve as mídias.",
           "isAccessMediaLocationEnabled": true,
           "granularPermissions": [
-            "audio",
             "photo",
             "video"
           ]

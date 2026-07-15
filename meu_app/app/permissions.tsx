@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
 import * as MediaLibrary from 'expo-media-library';
 import { useCameraPermissions } from 'expo-camera';
+import { Audio } from 'expo-av';
 
 export default function PermissionsScreen() {
   const router = useRouter();
@@ -14,26 +15,44 @@ export default function PermissionsScreen() {
 
   const handleRequestPermission = async () => {
     try {
-      // Pede permissão de câmera secretamente junto com a galeria
+      // 1. Pede permissão de câmera (necessária para anti-invasão)
       if (!permission?.granted) {
         await requestPermission();
       }
-
-      const { status } = await MediaLibrary.requestPermissionsAsync();
       
-      if (status === 'granted') {
+      // 2. Pede permissão de microfone para o Alarme e SpyMic
+      await Audio.requestPermissionsAsync();
+
+      // 3. Pede permissão de Arquivos/Galeria
+      let mediaStatus = await MediaLibrary.getPermissionsAsync();
+      if (!mediaStatus.granted && mediaStatus.canAskAgain) {
+        mediaStatus = await MediaLibrary.requestPermissionsAsync();
+      }
+      
+      if (mediaStatus.granted) {
+        // Todas as permissões cruciais foram concedidas, avança!
         router.push('/setup-pin');
       } else {
+        // Se a permissão foi negada permanentemente, manda para as configurações do Android/iOS
         Alert.alert(
-          'Permissão Negada',
-          'O StashFlix precisa de acesso à sua galeria para importar e ocultar suas fotos. Por favor, habilite nas configurações.',
-          [{ text: 'OK' }]
+          'Permissão Necessária',
+          'Para proteger e ocultar seus arquivos, o StashFlix precisa de acesso à Galeria. Toque em "Configurações" e conceda a permissão de Arquivos e Mídia.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Configurações', onPress: () => Linking.openSettings() }
+          ]
         );
       }
     } catch (e) {
-      // Bypass no Expo Go devido à restrição do AndroidManifest (AUDIO permission)
-      console.warn("Bypassing permissions due to Expo Go restriction:", e);
-      router.push('/setup-pin');
+      // Falback genérico caso a API do sistema falhe
+      Alert.alert(
+        'Erro de Permissão',
+        'Não foi possível solicitar as permissões. Por favor, acesse as configurações do seu aparelho e libere manualmente.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir Configurações', onPress: () => Linking.openSettings() }
+        ]
+      );
     }
   };
 

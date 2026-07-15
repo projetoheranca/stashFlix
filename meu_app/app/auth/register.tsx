@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/services/FirebaseConfig';
@@ -14,6 +15,9 @@ export default function RegisterScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -21,11 +25,15 @@ export default function RegisterScreen() {
       Alert.alert("Erro", "O email é obrigatório e a senha deve ter pelo menos 6 caracteres.");
       return;
     }
+    if (password !== confirmPassword) {
+      Alert.alert("Erro", "As senhas não coincidem.");
+      return;
+    }
     
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await saveUserPreferences(userCredential.user.uid, { theme: 'red', disguiseMode: 'none' });
+      await saveUserPreferences(userCredential.user.uid, { theme: 'red', disguiseMode: 'none', user_plan: 'FREE' });
     } catch (error: any) {
       Alert.alert("Falha no Registro", error.message);
     } finally {
@@ -48,14 +56,32 @@ export default function RegisterScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        <TextInput
-          style={[styles.input, { backgroundColor: currentColors.surface, borderColor: currentColors.border, color: currentColors.text }]}
-          placeholder="SENHA SECRETA"
-          placeholderTextColor={currentColors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={[styles.input, styles.passwordInput, { backgroundColor: currentColors.surface, borderColor: currentColors.border, color: currentColors.text }]}
+            placeholder="SENHA SECRETA"
+            placeholderTextColor={currentColors.textSecondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color={currentColors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={[styles.input, styles.passwordInput, { backgroundColor: currentColors.surface, borderColor: currentColors.border, color: currentColors.text }]}
+            placeholder="CONFIRMAR SENHA"
+            placeholderTextColor={currentColors.textSecondary}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+          />
+          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+            <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={24} color={currentColors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TouchableOpacity 
@@ -88,6 +114,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#FF0033', textAlign: 'center', marginBottom: 40, letterSpacing: 2 },
   inputContainer: { gap: 15, marginBottom: 30 },
   input: { borderWidth: 1, padding: 18, borderRadius: 8, fontSize: 14, fontFamily: 'SpaceGrotesk_400Regular', letterSpacing: 1 },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center' },
+  passwordInput: { flex: 1, paddingRight: 50 },
+  eyeIcon: { position: 'absolute', right: 15 },
   loginBtn: { backgroundColor: '#FF0033', padding: 20, borderRadius: 8, alignItems: 'center', shadowColor: '#FF0033', shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   loginText: { color: '#000', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, letterSpacing: 1 },
   registerLink: { marginTop: 25, alignItems: 'center' },

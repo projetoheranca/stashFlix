@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { auth } from '@/src/services/FirebaseConfig';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import * as SecureStore from '@/src/services/SecureStoreManager';
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 import { registerDevice } from '@/src/services/ApiService';
 import { useAppContext } from '@/src/contexts/AppContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,54 @@ export default function AccountScreen() {
   const theme = Colors[colorScheme];
   const { activePalette: currentColors, userPlan, setUserPlan } = useAppContext();
   const router = useRouter();
+
+  
+  // PIN Management
+  const [pinModalVisible, setPinModalVisible] = useState(false);
+  const [currentPinValue, setCurrentPinValue] = useState('');
+  const [newPinValue, setNewPinValue] = useState('');
+  
+  // Auth for PIN Reset
+  const [pinAuthPassword, setPinAuthPassword] = useState('');
+  const [pinAuthenticated, setPinAuthenticated] = useState(false);
+  const [pinAuthLoading, setPinAuthLoading] = useState(false);
+
+  const handleAuthenticateForPin = async () => {
+    if (!pinAuthPassword) {
+      Alert.alert('Erro', 'Digite sua senha da conta.');
+      return;
+    }
+    setPinAuthLoading(true);
+    try {
+      if (!auth.currentUser?.email) throw new Error("Usuário não logado");
+      await signInWithEmailAndPassword(auth, auth.currentUser.email, pinAuthPassword);
+      setPinAuthenticated(true);
+      setPinAuthPassword('');
+    } catch (e: any) {
+      Alert.alert('Erro', 'Senha incorreta. Tente novamente.');
+    } finally {
+      setPinAuthLoading(false);
+    }
+  };
+
+  const handleOpenPinModal = async () => {
+    const pin = await SecureStore.getItemAsync('user_pin') || '';
+    setCurrentPinValue(pin);
+    setNewPinValue('');
+    setPinAuthPassword('');
+    setPinAuthenticated(false);
+    setPinModalVisible(true);
+  };
+
+  const handleSavePin = async () => {
+    if (newPinValue.length !== 4) {
+      Alert.alert("Erro", "O PIN deve ter 4 dígitos.");
+      return;
+    }
+    await SecureStore.setItemAsync('user_pin', newPinValue);
+    Alert.alert("Sucesso", "PIN alterado com sucesso!");
+    setPinModalVisible(false);
+  };
 
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -205,6 +254,21 @@ export default function AccountScreen() {
             <Ionicons name="chevron-forward" size={20} color={currentColors.textSecondary} />
           )}
         </TouchableOpacity>
+        <View style={styles.divider} />
+
+        {/* Reset Main PIN */}
+        <TouchableOpacity style={styles.actionRow} onPress={handleOpenPinModal}>
+          <View style={styles.actionIconContainer}>
+            <Ionicons name="keypad" size={20} color={currentColors.tint} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.actionText, { color: currentColors.text }]}>Redefinir PIN Principal</Text>
+            <Text style={{ color: currentColors.textSecondary, fontSize: 12, marginTop: 2 }}>
+              Alterar senha de acesso ao cofre
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={currentColors.textSecondary} />
+        </TouchableOpacity>
 
         <View style={styles.divider} />
 
@@ -271,6 +335,64 @@ export default function AccountScreen() {
         <Ionicons name="trash-bin-outline" size={20} color="#FF0033" style={{ marginRight: 10 }} />
         <Text style={styles.nukeText}>APAGAR TUDO E EXCLUIR CONTA</Text>
       </TouchableOpacity>
+    
+      {/* PIN Edit Modal */}
+      <Modal visible={pinModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: currentColors.surface, borderColor: currentColors.border }]}>
+            <Text style={[styles.modalTitle, { color: currentColors.text }]}>Redefinir PIN Principal</Text>
+            
+            {!pinAuthenticated ? (
+              <>
+                <Text style={{ color: currentColors.textSecondary, marginBottom: 15, textAlign: 'center' }}>
+                  Por segurança, digite a senha da sua conta STASHFLIX ({auth.currentUser?.email}) para continuar.
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
+                  placeholder="Senha da conta"
+                  placeholderTextColor={currentColors.textSecondary}
+                  secureTextEntry
+                  value={pinAuthPassword}
+                  onChangeText={setPinAuthPassword}
+                />
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
+                    <Text style={[styles.modalBtnText, { color: currentColors.text }]}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.tint }]} onPress={handleAuthenticateForPin}>
+                    <Text style={styles.modalBtnText}>{pinAuthLoading ? 'Verificando...' : 'Autenticar'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={{ color: currentColors.textSecondary, marginBottom: 15 }}>
+                  PIN Atual: {currentPinValue || 'Nenhum'}
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
+                  placeholder="Digite o novo PIN (4 dígitos)"
+                  placeholderTextColor={currentColors.textSecondary}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  secureTextEntry
+                  value={newPinValue}
+                  onChangeText={setNewPinValue}
+                />
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
+                    <Text style={[styles.modalBtnText, { color: currentColors.text }]}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.tint }]} onPress={handleSavePin}>
+                    <Text style={styles.modalBtnText}>Salvar Novo PIN</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }
@@ -300,4 +422,11 @@ const styles = StyleSheet.create({
   actionText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   nukeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderWidth: 2, borderColor: '#FF0033', padding: 20, borderRadius: 8, borderStyle: 'dashed', marginTop: 10 },
   nukeText: { color: '#FF0033', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 13, letterSpacing: 1.5 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', borderWidth: 1, borderRadius: 12, padding: 25, alignItems: 'center' },
+  modalTitle: { fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 10, textAlign: 'center' },
+  input: { width: '100%', height: 50, borderWidth: 1, borderRadius: 8, paddingHorizontal: 15, marginBottom: 20, fontFamily: 'Inter_400Regular' },
+  modalButtons: { flexDirection: 'row', gap: 15, width: '100%' },
+  modalBtn: { flex: 1, height: 45, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  modalBtnText: { fontFamily: 'SpaceGrotesk_700Bold', fontSize: 14, color: '#000' }
 });

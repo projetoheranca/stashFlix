@@ -3,8 +3,9 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus, BackHandler, Alert, Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import Purchases from 'react-native-purchases';
+import Constants from 'expo-constants';
 import { useFonts, SpaceGrotesk_700Bold, SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
@@ -47,6 +48,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const appState = useRef(AppState.currentState);
+  const hasPinRef = useRef(false);
   const [isLocked, setIsLocked] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
@@ -71,15 +73,40 @@ export default function RootLayout() {
   useEffect(() => {
     if (!authInitialized) return;
 
-    const inAuthGroup = segments[0] === 'auth';
+    const checkRouting = async () => {
+      const inAuthGroup = segments[0] === 'auth';
+      
+      if (!user) {
+        if (!inAuthGroup) {
+          router.replace('/auth/login');
+        }
+      } else {
+        // 🔑 Sincronização bidirecional de PIN/configs com o Firebase
+        // 1) Baixa do Firebase (pode preencher user_pin se ainda não está local)
+        // 2) Sobe o que está local e não está na nuvem (resolve a primeira vez)
+        try {
+          const { loadSettingsFromCloud, syncSettingsToCloud } = await import('@/src/services/FirebaseDB');
+          await loadSettingsFromCloud();
+          // Aguarda um tick para o SecureStore salvar, depois sobe o que está local
+          await syncSettingsToCloud();
+        } catch {}
 
-    if (!user && !inAuthGroup) {
-      // User is not logged in, but trying to access a secure screen
-      router.replace('/auth/login');
-    } else if (user && inAuthGroup) {
-      // User is logged in, but trying to access login/register
-      router.replace('/');
-    }
+        const userPin = await SecureStore.getItemAsync('user_pin');
+        const hasPin = userPin !== null && userPin !== undefined && userPin.length > 0;
+        hasPinRef.current = hasPin;
+
+        if (!hasPin) {
+          if (segments[0] !== 'onboarding' && segments[0] !== 'permissions' && segments[0] !== 'setup-pin' && segments[0] !== 'confirm-pin') {
+            router.replace('/onboarding');
+          }
+        } else {
+          if (inAuthGroup || segments[0] === 'onboarding' || segments[0] === 'permissions' || segments[0] === 'setup-pin' || segments[0] === 'confirm-pin') {
+            router.replace('/(drawer)');
+          }
+        }
+      }
+    };
+    checkRouting();
   }, [user, authInitialized, segments]);
 
   useEffect(() => {
@@ -98,16 +125,20 @@ export default function RootLayout() {
 
       // INICIALIZAÇÃO REVENUECAT (PAGAMENTOS IAP)
       try {
-        // 👇👇👇 COLE SUA CHAVE DO REVENUECAT AQUI 👇👇👇
-        const rcApiKey = process.env.EXPO_PUBLIC_RC_API_KEY || 'COLOQUE_A_CHAVE_AQUI'; 
+        const rcApiKey = process.env.EXPO_PUBLIC_RC_API_KEY || 'test_YoCvUoOzlomcOLuoCPqTvMCQWbV'; 
         
-        if (rcApiKey !== 'COLOQUE_A_CHAVE_AQUI') {
+        // Verifica se estamos no Expo Go. O RevenueCat precisa de código nativo para rodar.
+        const isExpoGo = Constants.appOwnership === 'expo';
+        
+        if (rcApiKey !== 'COLOQUE_A_CHAVE_AQUI' && !isExpoGo) {
           Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
           if (Platform.OS === 'ios') {
             Purchases.configure({ apiKey: rcApiKey });
           } else if (Platform.OS === 'android') {
             Purchases.configure({ apiKey: rcApiKey });
           }
+        } else if (isExpoGo) {
+          console.warn("⚠️ Rodando no Expo Go: RevenueCat nativo desativado para evitar crash.");
         }
       } catch (e) {
         console.warn('RevenueCat init error', e);
@@ -123,9 +154,12 @@ export default function RootLayout() {
         }
       } catch (e) {}
 
-      const hasOnboarded = await SecureStore.getItemAsync('has_onboarded');
-      if (hasOnboarded === 'true') {
-        setIsLocked(true); // Bloqueio ativado na inicialização
+      // Só trava na inicialização SE tiver usuário logado E tiver PIN
+      if (user) {
+        const userPin = await SecureStore.getItemAsync('user_pin');
+        if (userPin !== null && userPin !== undefined && userPin.length > 0) {
+          setIsLocked(true); // Bloqueio ativado na inicialização
+        }
       }
 
       // 🚨 Protocolo Dead Man's Switch (Autodestruição)
@@ -139,7 +173,6 @@ export default function RootLayout() {
           
           if (daysPassed > parseInt(destructDays)) {
             await SecureStore.deleteItemAsync('user_pin');
-            await SecureStore.deleteItemAsync('has_onboarded');
             try {
               const FileSystem = await import('expo-file-system/legacy');
               await FileSystem.deleteAsync(FileSystem.documentDirectory + 'SQLite', { idempotent: true });
@@ -150,26 +183,27 @@ export default function RootLayout() {
     };
     initApp();
 
-    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (
-        appState.current.match(/active/) &&
-        (nextAppState === 'inactive' || nextAppState === 'background')
-      ) {
-        // App went to background
-        const hasOnboarded = await SecureStore.getItemAsync('has_onboarded');
-        if (hasOnboarded === 'true') {
-          setIsLocked(true); // Bloqueio background ativado
-        }
-
-        const ghostMode = await SecureStore.getItemAsync('ghost_mode_enabled');
-        if (ghostMode === 'true') {
-          try {
-            BackHandler.exitApp();
-          } catch (e) {
-            // ignorado
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      // Quando o app VOLTA para o primeiro plano (active)
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        if ((global as any).ignoreNextBackground) {
+          (global as any).ignoreNextBackground = false;
+        } else {
+          if (user) {
+            SecureStore.getItemAsync('user_pin').then(userPin => {
+              if (userPin !== null && userPin !== undefined && userPin.length > 0) {
+                setIsLocked(true); // Trava a tela ao voltar pro app
+              }
+            });
           }
         }
       }
+
+      // Quando o app VAI para segundo plano (background)
+      if (appState.current.match(/active/) && nextAppState.match(/inactive|background/)) {
+        // Nada a fazer aqui no momento
+      }
+
       appState.current = nextAppState;
     });
 
@@ -181,11 +215,13 @@ export default function RootLayout() {
         const { x, y, z } = accelerometerData;
         const acceleration = Math.sqrt(x * x + y * y + z * z);
         if (acceleration > 2.5) { // Limiar de força g
-          SecureStore.getItemAsync('has_onboarded').then(onboarded => {
-            if (onboarded === 'true') {
-              setIsLocked(true);
-            }
-          });
+          if (user) {
+            SecureStore.getItemAsync('user_pin').then(userPin => {
+              if (userPin !== null && userPin !== undefined && userPin.length > 0) {
+                setIsLocked(true);
+              }
+            });
+          }
         }
       });
     }).catch(e => {});
@@ -196,7 +232,7 @@ export default function RootLayout() {
         accelSubscription.remove();
       }
     };
-  }, []);
+  }, [user]);
 
   if (!fontsLoaded) {
     return null;
@@ -220,7 +256,7 @@ export default function RootLayout() {
           <Stack.Screen name="decoy" options={{ presentation: 'modal' }} />
         </Stack>
         <StatusBar style="auto" />
-        <LockScreen visible={isLocked} onUnlocked={() => setIsLocked(false)} />
+        <LockScreen visible={isLocked && user !== null} onUnlocked={() => setIsLocked(false)} />
         <CustomAlertModal />
       </ThemeProvider>
     </AppProvider>

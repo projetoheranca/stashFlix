@@ -8,4 +8,7 @@ config.resolver.sourceExts.push('cjs');
 // Desativar "packageExports" força o Metro a resolver os arquivos corretamente para o React Native.
 config.resolver.unstable_enablePackageExports = false;
 
+// Adiciona suporte a arquivos de áudio como assets do bundle
+config.resolver.assetExts.push('mp3', 'ogg', 'm4a', 'wav', 'caf');
+
 module.exports = config;

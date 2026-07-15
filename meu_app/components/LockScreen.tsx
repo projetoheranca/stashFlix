@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, BackHandler, Pressable, TextInput } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, BackHandler, Pressable, TextInput, Dimensions } from 'react-native';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import * as Haptics from 'expo-haptics';
-import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming, withRepeat, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming, withRepeat } from 'react-native-reanimated';
 import { useAppContext } from '@/src/contexts/AppContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -10,6 +12,12 @@ import { Audio } from 'expo-av';
 import { useRouter } from 'expo-router';
 import { Vibration } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '@/src/services/FirebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { triggerIntruderAlarm, stopIntruderAlarm } from '@/src/services/IntruderAlarm';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+const CALC_BTN = (SCREEN_W - 40) / 4; // 4 columns with 10px margin each side
 
 interface LockScreenProps {
   visible: boolean;
@@ -24,17 +32,29 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
   const [errorCount, setErrorCount] = useState(0);
   const [customBg, setCustomBg] = useState<string | null>(null);
   const [lockStyle, setLockStyle] = useState<'geometric' | 'standard'>('geometric');
-  
-  const [crashKeypadVisible, setCrashKeypadVisible] = useState(false);
-  const [tapHistory, setTapHistory] = useState<{ time: number; type: 'tap' | 'long' }[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [cameraMode, setCameraMode] = useState<'picture' | 'video'>('picture');
 
-  // Browser Disguise States
+  // Crash disguise states
+  const [crashKeypadVisible, setCrashKeypadVisible] = useState(false);
+  const [tapHistory, setTapHistory] = useState<{ time: number; type: 'tap' | 'long' }[]>([]);
+
+  // Browser disguise states
   const [browserKeypadVisible, setBrowserKeypadVisible] = useState(false);
   const [browserKeyword, setBrowserKeyword] = useState('Batman');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResultsVisible, setSearchResultsVisible] = useState(false);
+
+  // PIN Recovery states
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryPassword, setRecoveryPassword] = useState('');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+  // Calculator states
+  const [calcDisplay, setCalcDisplay] = useState('0');
+  const [calcMemory, setCalcMemory] = useState<number | null>(null);
+  const [calcOperator, setCalcOperator] = useState<string | null>(null);
+  const [waitingForSecond, setWaitingForSecond] = useState(false);
 
   const shakeOffset = useSharedValue(0);
 
@@ -60,19 +80,17 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
       setSearchQuery('');
       setSearchResultsVisible(false);
       setTapHistory([]);
-      SecureStore.getItemAsync('disguise_keyword').then(kw => {
-        if (kw) setBrowserKeyword(kw);
-      });
-      SecureStore.getItemAsync('lock_bg_uri').then(uri => {
-        if (uri) setCustomBg(uri);
-      });
+      setCalcDisplay('0');
+      setCalcMemory(null);
+      setCalcOperator(null);
+      setWaitingForSecond(false);
+      SecureStore.getItemAsync('disguise_keyword').then(kw => { if (kw) setBrowserKeyword(kw); });
+      SecureStore.getItemAsync('lock_bg_uri').then(uri => { if (uri) setCustomBg(uri); });
       SecureStore.getItemAsync('lock_style').then(style => {
-        if (style === 'standard') setLockStyle('standard');
-        else setLockStyle('geometric');
+        setLockStyle(style === 'standard' ? 'standard' : 'geometric');
       });
       SecureStore.getItemAsync('intruder_video_duration').then(val => {
-        if (val && val !== '0') setCameraMode('video');
-        else setCameraMode('picture');
+        setCameraMode(val && val !== '0' ? 'video' : 'picture');
       });
     }
   }, [visible]);
@@ -80,140 +98,160 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
   const cameraRef = React.useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
 
-  const captureIntruder = async () => {
+  // ─── PIN Recovery ──────────────────────────────────────────────────────────
+  const handleRecoverPin = async () => {
+    if (!recoveryPassword) {
+      Alert.alert('Erro', 'Digite a senha da sua conta para recuperar o PIN.');
+      return;
+    }
+    setRecoveryLoading(true);
     try {
-      // Verifica se a permissão foi dada e se a configuração de alerta está ativada
-      const alertsEnabled = await SecureStore.getItemAsync('breakin_alerts');
-      if (alertsEnabled === 'false') {
-        Alert.alert('Aviso', 'A função de selfie de intruso está desligada nas configurações!');
-        return;
-      }
-      if (!permission?.granted) {
-        Alert.alert('Aviso', 'O aplicativo não tem permissão para usar a câmera.');
-        return;
-      }
-
-      if (!cameraRef.current) {
-        Alert.alert('Aviso', 'O hardware da câmera ainda não terminou de ligar. Tente errar de novo.');
-        return;
-      }
-
-      const videoDuration = await SecureStore.getItemAsync('intruder_video_duration');
-      const isVideo = videoDuration && videoDuration !== '0';
-
-        const logAlert = async (uri: string, type: 'photo' | 'video') => {
-        const timestamp = new Date().toISOString();
-        const logsStr = await AsyncStorage.getItem('intruder_alerts');
-        let logs = logsStr ? JSON.parse(logsStr) : [];
-        logs.unshift({ id: Date.now().toString(), timestamp, type, uri });
-        if (logs.length > 20) logs = logs.slice(0, 20);
-        await AsyncStorage.setItem('intruder_alerts', JSON.stringify(logs));
-      };
-
-      // Alarme Sonoro de Pânico
-      const alarmEnabled = await SecureStore.getItemAsync('alarm_siren_enabled');
-      if (alarmEnabled === 'true') {
-        try {
-          const soundFile = (await SecureStore.getItemAsync('alarm_siren_sound')) || 'digital_watch_alarm_long.ogg';
-          const { sound } = await Audio.Sound.createAsync(
-            { uri: `https://actions.google.com/sounds/v1/alarms/${soundFile}` },
-            { shouldPlay: true, isLooping: true, volume: 1.0 }
-          );
-          Vibration.vibrate([500, 200, 500, 200], true);
-          
-          setTimeout(async () => {
-            await sound.stopAsync();
-            await sound.unloadAsync();
-            Vibration.cancel();
-          }, 15000); // Toca por 15 segundos ou até o app fechar
-        } catch (e) {
-        }
-      }
-
-      if (isVideo) {
-        const { status: micStatus } = await Audio.requestPermissionsAsync();
-        if (micStatus !== 'granted') {
-          Alert.alert('Aviso', 'Permissão de microfone necessária para o vídeo.');
-          return;
-        }
-
-        setIsRecording(true);
-        const durationSec = parseInt(videoDuration, 10);
-        
-        setTimeout(() => {
-          if (cameraRef.current) {
-            cameraRef.current.stopRecording();
-          }
-          setIsRecording(false);
-        }, durationSec * 1000);
-
-        const video = await cameraRef.current.recordAsync();
-        if (video && video.uri) {
-          const { importToAlbum } = await import('@/src/services/VaultService');
-          const secureUri = await importToAlbum(video.uri, 'INTRUSOS', false);
-          await logAlert(secureUri, 'video');
-          Alert.alert('🚨 Intruso Detectado', 'Protocolo de vídeo acionado e salvo.');
-        }
-      } else {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.3 });
-        if (photo && photo.uri) {
-          const { importToAlbum } = await import('@/src/services/VaultService');
-          const secureUri = await importToAlbum(photo.uri, 'INTRUSOS', false);
-          await logAlert(secureUri, 'photo');
-
-          // Microfone Espião Premium
-          const micEnabled = await SecureStore.getItemAsync('spy_mic_enabled');
-          if (micEnabled === 'true') {
-            const { status: micStatus } = await Audio.requestPermissionsAsync();
-            if (micStatus === 'granted') {
-              try {
-                await Audio.setAudioModeAsync({
-                  allowsRecordingIOS: true,
-                  playsInSilentModeIOS: true,
-                });
-                const recording = new Audio.Recording();
-                await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-                await recording.startAsync();
-
-                setTimeout(async () => {
-                  try {
-                    await recording.stopAndUnloadAsync();
-                    const audioUri = recording.getURI();
-                    if (audioUri) {
-                      let finalAudioUri = audioUri;
-                      if (!audioUri.endsWith('.m4a') && !audioUri.endsWith('.caf') && !audioUri.endsWith('.3gp') && !audioUri.endsWith('.wav')) {
-                        const tempAudioUri = FileSystem.cacheDirectory + 'spy_recording_' + Date.now() + '.m4a';
-                        await FileSystem.copyAsync({ from: audioUri, to: tempAudioUri });
-                        finalAudioUri = tempAudioUri;
-                      }
-
-                      const { importToAlbum: importFile } = await import('@/src/services/VaultService');
-                      const secAudioUri = await importFile(finalAudioUri, 'INTRUSOS', false);
-                      await logAlert(secAudioUri, 'photo');
-
-                      if (finalAudioUri !== audioUri) {
-                        try {
-                          await FileSystem.deleteAsync(finalAudioUri, { idempotent: true });
-                        } catch (delErr) {}
-                      }
-                    }
-                  } catch (audioErr) {
-                  }
-                }, 15000);
-              } catch (audioStartErr) {
-              }
-            }
-          }
-
-          Alert.alert('🚨 Intruso Detectado', 'Protocolo de segurança premium acionado. Evidências salvas no cofre!');
-        }
-      }
-    } catch (e: any) {
-      setIsRecording(false);
-      Alert.alert('Erro Fatal Câmera', e.message || String(e));
+      if (!auth.currentUser?.email) throw new Error('Usuário não logado');
+      await signInWithEmailAndPassword(auth, auth.currentUser.email, recoveryPassword);
+      const userPin = await SecureStore.getItemAsync('user_pin');
+      Alert.alert('PIN Recuperado', `Seu PIN principal é: ${userPin}`);
+      setShowRecovery(false);
+      setRecoveryPassword('');
+    } catch {
+      Alert.alert('Erro na Autenticação', 'Senha incorreta. Tente novamente.');
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
+  // ─── Intruder capture ──────────────────────────────────────────────────────
+  const captureIntruder = async () => {
+    try {
+      // ── Ler todos os modos de captura ────────────────────────────────────
+      const alertsEnabled   = await SecureStore.getItemAsync('breakin_alerts');
+      const videoDuration   = await SecureStore.getItemAsync('intruder_video_duration');
+      const spyMicEnabled   = await SecureStore.getItemAsync('spy_mic_enabled');
+
+      const isPhoto   = alertsEnabled !== 'false';
+      const isVideo   = !!(videoDuration && videoDuration !== '0');
+      const isSpyMic  = spyMicEnabled === 'true';
+
+      // Se nenhum modo ativo, não faz nada
+      if (!isPhoto && !isVideo && !isSpyMic) return;
+
+      // Solicita permissão de câmera se necessário (primeira tentativa de invasão)
+      if ((isPhoto || isVideo) && !permission?.granted) { requestPermission(); }
+
+      // ── 1. Se microfone espião estiver ativo, configura canal de áudio para gravação ANTES de tudo
+      let spyRecording: Audio.Recording | null = null;
+      if (isSpyMic && !isVideo) {
+        try {
+          const { status } = await Audio.requestPermissionsAsync();
+          if (status === 'granted') {
+            await Audio.setAudioModeAsync({
+              allowsRecordingIOS: true,
+              playsInSilentModeIOS: true,
+              staysActiveInBackground: true,
+            });
+            const { recording } = await Audio.Recording.createAsync(
+              Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+            spyRecording = recording;
+          }
+        } catch (e) {
+          console.warn('Spy mic setup failed:', e);
+          spyRecording = null;
+        }
+      }
+
+      // ── 2. Vibração de emergência (apenas se o spy mic NÃO estiver gravando, pois
+      //       a vibração pode interferir com a qualidade do áudio no Android)
+      if (!spyRecording) {
+        Vibration.vibrate([500, 200, 500, 200], true);
+        setTimeout(() => Vibration.cancel(), 15000);
+      }
+
+      // ── 3. Helper de upload para salvar evidência local + nuvem ──────────
+      const uploadIntruderAlert = async (fileUri: string, fileType: 'photo' | 'video' | 'audio') => {
+        const timestamp = new Date().toISOString();
+        const alertId = Date.now().toString() + Math.random().toString(36).substring(7);
+        try {
+          const logsStr = await AsyncStorage.getItem('intruder_alerts');
+          let logs = logsStr ? JSON.parse(logsStr) : [];
+          logs.unshift({ id: alertId, timestamp, type: fileType, uri: fileUri, fromCloud: false });
+          if (logs.length > 20) logs = logs.slice(0, 20);
+          await AsyncStorage.setItem('intruder_alerts', JSON.stringify(logs));
+        } catch {}
+
+        try {
+          const user = auth.currentUser;
+          if (!user) return;
+          const { uploadBytes, getDownloadURL, ref: storageRefFn } = await import('firebase/storage');
+          const { ref: dbRefFn, set: dbSet } = await import('firebase/database');
+          const { storage, rtdb: db } = await import('@/src/services/FirebaseConfig');
+          const ext = fileType === 'video' ? 'mp4' : fileType === 'audio' ? 'm4a' : 'jpg';
+          const filename = `intruder_${alertId}.${ext}`;
+          const blob: Blob = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = () => resolve(xhr.response);
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.responseType = 'blob';
+            xhr.open('GET', fileUri, true);
+            xhr.send(null);
+          });
+          const sRef = storageRefFn(storage, `users/${user.uid}/vault/${filename}`);
+          const snap = await uploadBytes(sRef, blob);
+          const downloadUrl = await getDownloadURL(snap.ref);
+          const safeFilename = filename.replace(/\./g, '_');
+          const fileRef = dbRefFn(db, `users/${user.uid}/vault_files/${safeFilename}`);
+          await dbSet(fileRef, { fileName: filename, downloadUrl, albumName: 'INTRUSOS', sizeBytes: blob.size || 0, uploadedAt: timestamp, intruder: true, mediaType: fileType });
+          try {
+            const logsStr2 = await AsyncStorage.getItem('intruder_alerts');
+            let logs2 = logsStr2 ? JSON.parse(logsStr2) : [];
+            const idx = logs2.findIndex((l: any) => l.id === alertId);
+            if (idx >= 0) { logs2[idx].uri = downloadUrl; logs2[idx].fromCloud = true; await AsyncStorage.setItem('intruder_alerts', JSON.stringify(logs2)); }
+          } catch {}
+        } catch (e) { console.warn('Upload failed:', e); }
+      };
+
+      // ── 4. Captura via Câmera (foto ou vídeo) — independente do áudio ────
+      if ((isVideo || isPhoto) && cameraRef.current) {
+        try {
+          if (isVideo) {
+            setIsRecording(true);
+            const durationMs = parseInt(videoDuration!, 10) * 1000;
+            setTimeout(() => { cameraRef.current?.stopRecording(); setIsRecording(false); }, durationMs);
+            cameraRef.current.recordAsync().then(video => {
+              if (video?.uri) uploadIntruderAlert(video.uri, 'video');
+            }).catch(() => setIsRecording(false));
+          } else {
+            cameraRef.current.takePictureAsync({ quality: 0.5 }).then(photo => {
+              if (photo?.uri) uploadIntruderAlert(photo.uri, 'photo');
+            }).catch(() => {});
+          }
+        } catch (e) {
+          console.warn('Camera capture failed:', e);
+          setIsRecording(false);
+        }
+      }
+
+      // ── 5. Finaliza gravação do microfone espião após 15s ────────────────
+      if (spyRecording) {
+        setTimeout(async () => {
+          try {
+            await spyRecording!.stopAndUnloadAsync();
+            const audioUri = spyRecording!.getURI();
+            if (audioUri) uploadIntruderAlert(audioUri, 'audio');
+            // Restaura canal de áudio para modo normal após gravar
+            await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: false, staysActiveInBackground: false });
+          } catch (e) { console.warn('Spy mic stop failed:', e); }
+        }, 15000);
+      }
+
+    } catch (e) {
+      console.warn('Capture intruder failed:', e);
+      setIsRecording(false);
+    }
+  };
+
+
+
+  // ─── PIN Validation — reads from SecureStore (synced from Firebase on login) ─
   const validatePin = async (currentPin: string) => {
     const savedPin = await SecureStore.getItemAsync('user_pin');
     const fakePin = await SecureStore.getItemAsync('fake_pin');
@@ -222,135 +260,65 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
     if (currentPin === savedPin) {
       setFakeVault(false);
       setErrorCount(0);
+      await stopIntruderAlarm();  // Para o alarme ao desbloquear com sucesso
       await SecureStore.setItemAsync('last_login_timestamp', new Date().toISOString());
-      router.replace('/');
       onUnlocked();
-    } else if (currentPin === fakePin) {
+      router.replace('/');
+    } else if (fakePin && currentPin === fakePin) {
       setFakeVault(true);
       setErrorCount(0);
       await SecureStore.setItemAsync('last_login_timestamp', new Date().toISOString());
-      router.replace('/');
       onUnlocked();
+      router.replace('/');
     } else if (kamikazePin && currentPin === kamikazePin) {
-      // Modo Kamikaze: Apaga o cofre real em background e abre o cofre falso (isca)
       const { nukeRealVault } = await import('@/src/services/VaultService');
       await nukeRealVault();
-      setFakeVault(true);
-      setErrorCount(0);
-      await SecureStore.setItemAsync('last_login_timestamp', new Date().toISOString());
-      router.replace('/');
-      onUnlocked();
+      setPin('');
+      router.replace('/auth/login');
     } else {
       setErrorVisible(true);
       triggerShake();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const newErrors = errorCount + 1;
       setErrorCount(newErrors);
-      
-      // Solicita permissão no primeiro erro para dar tempo da câmera ligar no background
-      if (newErrors === 1 && !permission?.granted) {
-        requestPermission();
-      }
-      
+      if (newErrors === 1 && !permission?.granted) requestPermission();
+      // ── Alarme: componente independente, dispara junto com a captura ──────
       if (newErrors >= 3) {
-        captureIntruder();
-      } else {
-        // Se ainda não chegou a 3 erros, avisamos no modo debug ou fazemos uma vibração mais forte
+        triggerIntruderAlarm();   // 🔔 Alarme sonoro — 100% independente
+        captureIntruder();        // 📸 Captura foto/vídeo/áudio — lógica separada
       }
-      
-      setTimeout(() => setPin(''), 500);
+      setTimeout(() => { setPin(''); setErrorVisible(false); }, 600);
     }
   };
 
+  // ─── Standard PIN keypad handlers ─────────────────────────────────────────
   const handlePress = async (num: string) => {
     if (isRecording) return;
-    if (disguiseMode === 'calculator') {
-      if (pin.length < 8) setPin(pin + num);
-      return;
-    }
-
     if (pin.length < 4) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const newPin = pin + num;
       setPin(newPin);
       setErrorVisible(false);
-
-      if (newPin.length === 4) {
-        validatePin(newPin);
-      }
+      if (newPin.length === 4) validatePin(newPin);
     }
   };
 
-  // Calculator Logic
-  const [calcDisplay, setCalcDisplay] = useState('0');
-  const [calcMemory, setCalcMemory] = useState<number | null>(null);
-  const [calcOperator, setCalcOperator] = useState<string | null>(null);
-
-  const handleCalcPress = (key: string) => {
-    if (isRecording) return;
+  const handleDelete = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Secret Unlock Logic
-    if (key === '=') {
-      validatePin(pin);
-      // Reset after attempt
-      setPin('');
-    } else if (!isNaN(Number(key))) {
-      setPin(pin + key);
-    } else {
-      setPin(''); // Reset hidden pin buffer if they press operators
-    }
-
-    // Real Math Logic
-    if (key === 'AC') {
-      setCalcDisplay('0');
-      setCalcMemory(null);
-      setCalcOperator(null);
-    } else if (key === '+/-') {
-      setCalcDisplay(String(Number(calcDisplay) * -1));
-    } else if (key === '%') {
-      setCalcDisplay(String(Number(calcDisplay) / 100));
-    } else if (['/', 'x', '-', '+'].includes(key)) {
-      setCalcOperator(key);
-      setCalcMemory(Number(calcDisplay));
-      setCalcDisplay('0');
-    } else if (key === '=') {
-      if (calcOperator && calcMemory !== null) {
-        let result = 0;
-        const current = Number(calcDisplay);
-        if (calcOperator === '+') result = calcMemory + current;
-        if (calcOperator === '-') result = calcMemory - current;
-        if (calcOperator === 'x') result = calcMemory * current;
-        if (calcOperator === '/') result = current !== 0 ? calcMemory / current : 0;
-        setCalcDisplay(String(result));
-        setCalcOperator(null);
-        setCalcMemory(null);
-      }
-    } else if (key === '.') {
-      if (!calcDisplay.includes('.')) setCalcDisplay(calcDisplay + '.');
-    } else {
-      setCalcDisplay(calcDisplay === '0' ? key : calcDisplay + key);
-    }
+    setPin(pin.slice(0, -1));
   };
 
-  const handleClear = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPin('');
-  };
-  
+  // ─── Crash disguise helpers ────────────────────────────────────────────────
   const handleCrashTextPress = () => {
     const now = Date.now();
     const updated = [...tapHistory, { time: now, type: 'tap' as const }].slice(-4);
-    if (updated.length === 4) {
-      const timeDiff = updated[3].time - updated[0].time;
-      if (timeDiff < 2000) { // 4 toques em menos de 2 segundos
-        setCrashKeypadVisible(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setTapHistory([]);
-        return;
-      }
+    if (updated.length === 4 && updated[3].time - updated[0].time < 2000) {
+      setCrashKeypadVisible(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTapHistory([]);
+    } else {
+      setTapHistory(updated);
     }
-    setTapHistory(updated);
   };
 
   const handleCrashTextLongPress = () => {
@@ -359,52 +327,142 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
     setTapHistory([]);
   };
 
-  const handleDelete = () => {
+  // ─── Calculator handlers (real math + secret PIN buffer) ──────────────────
+  const handleCalcPress = (key: string) => {
+    if (isRecording) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPin(pin.slice(0, -1));
+
+    // Secret PIN buffer: digits accumulate in `pin`, '=' validates
+    if (key === '=') {
+      validatePin(pin);
+      setPin('');
+    } else if (key === '⌫' || key === 'AC') {
+      setPin(''); // clear hidden buffer on delete/clear
+    } else if (!isNaN(Number(key)) && key !== '.') {
+      setPin(prev => prev + key);
+    } else if (['+', '-', 'x', '/'].includes(key)) {
+      setPin(''); // operator pressed → reset hidden buffer
+    }
+
+    // Real calculator display logic
+    if (key === 'AC') {
+      setCalcDisplay('0');
+      setCalcMemory(null);
+      setCalcOperator(null);
+      setWaitingForSecond(false);
+    } else if (key === '⌫') {
+      setCalcDisplay(prev => (prev.length > 1 ? prev.slice(0, -1) : '0'));
+    } else if (key === '+/-') {
+      setCalcDisplay(prev => String(Number(prev) * -1));
+    } else if (key === '%') {
+      setCalcDisplay(prev => String(Number(prev) / 100));
+    } else if (['+', '-', 'x', '/'].includes(key)) {
+      setCalcMemory(Number(calcDisplay));
+      setCalcOperator(key);
+      setWaitingForSecond(true);
+    } else if (key === '=') {
+      if (calcOperator && calcMemory !== null) {
+        const cur = Number(calcDisplay);
+        let result = 0;
+        if (calcOperator === '+') result = calcMemory + cur;
+        if (calcOperator === '-') result = calcMemory - cur;
+        if (calcOperator === 'x') result = calcMemory * cur;
+        if (calcOperator === '/') result = cur !== 0 ? calcMemory / cur : 0;
+        // Trim floating point noise
+        const pretty = parseFloat(result.toPrecision(10)).toString();
+        setCalcDisplay(pretty);
+        setCalcOperator(null);
+        setCalcMemory(null);
+        setWaitingForSecond(false);
+      }
+    } else if (key === '.') {
+      if (!calcDisplay.includes('.')) setCalcDisplay(calcDisplay + '.');
+    } else {
+      // Digit
+      if (waitingForSecond) {
+        setCalcDisplay(key);
+        setWaitingForSecond(false);
+      } else {
+        setCalcDisplay(calcDisplay === '0' ? key : calcDisplay + key);
+      }
+    }
   };
 
-  if (disguiseMode === 'crash' && !crashKeypadVisible) {
-    return (
-      <Modal visible={visible} animationType="fade" transparent={false}>
-        <View style={styles.crashContainer}>
-          {permission?.granted && (
-            <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-              <CameraView 
-                ref={cameraRef} 
-                facing="front" 
-                mode={cameraMode}
-                style={{ width: 16, height: 16 }} 
-              />
-            </View>
-          )}
-
-          <View style={styles.crashDialog}>
-            <Pressable 
-              onPress={handleCrashTextPress} 
-              onLongPress={handleCrashTextLongPress}
-              delayLongPress={1500}
-              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingVertical: 10, paddingRight: 20 }}
-            >
-              <Text style={styles.crashTitle}>Erro</Text>
-              <Text style={[styles.crashTitle, { marginLeft: 6 }]}>do Sistema</Text>
-            </Pressable>
-            <Text style={styles.crashText}>
-              O aplicativo StashFlix parou de funcionar inesperadamente devido a uma falha crítica de sistema.
-            </Text>
-            <TouchableOpacity 
-              style={styles.crashButton} 
-              onPress={() => BackHandler.exitApp()}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.crashButtonText}>Fechar app</Text>
+  // ─── Recovery modal (shared) ──────────────────────────────────────────────
+  const RecoveryModal = () => (
+    <Modal visible={showRecovery} transparent animationType="fade">
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.modalTitle, { color: theme.text }]}>Recuperar PIN</Text>
+          <Text style={{ color: theme.textSecondary, marginBottom: 15, textAlign: 'center', fontFamily: 'Inter_400Regular' }}>
+            Digite a senha da sua conta {auth.currentUser?.email} para ver seu PIN principal.
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+            placeholder="Senha da conta"
+            placeholderTextColor={theme.textSecondary}
+            secureTextEntry
+            value={recoveryPassword}
+            onChangeText={setRecoveryPassword}
+          />
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.surfaceHighlight }]} onPress={() => setShowRecovery(false)}>
+              <Text style={[styles.modalBtnText, { color: theme.text }]}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={handleRecoverPin}>
+              <Text style={styles.modalBtnText}>{recoveryLoading ? 'Verificando...' : 'Recuperar'}</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </View>
+    </Modal>
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODE: CRASH (App crash screen disguise)
+  // ══════════════════════════════════════════════════════════════════════════
+  if (disguiseMode === 'crash' && !crashKeypadVisible) {
+    return (
+      <>
+        <Modal visible={visible} animationType="fade" transparent={false}>
+          <View style={styles.crashContainer}>
+            {permission?.granted && (
+              <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
+                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
+              </View>
+            )}
+            <View style={styles.crashDialog}>
+              <Pressable
+                onPress={handleCrashTextPress}
+                onLongPress={handleCrashTextLongPress}
+                delayLongPress={1500}
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingVertical: 10, paddingRight: 20 }}
+              >
+                <Text style={styles.crashTitle}>Erro</Text>
+                <Text style={[styles.crashTitle, { marginLeft: 6 }]}>do Sistema</Text>
+              </Pressable>
+              <Text style={styles.crashText}>
+                O aplicativo StashFlix parou de funcionar inesperadamente devido a uma falha crítica de sistema.
+              </Text>
+              <TouchableOpacity style={styles.crashButton} onPress={() => BackHandler.exitApp()} activeOpacity={0.8}>
+                <Text style={styles.crashButtonText}>Fechar app</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setShowRecovery(true)} style={{ marginTop: 30 }}>
+              <Text style={{ color: '#555', fontFamily: 'Inter_400Regular', fontSize: 12, textDecorationLine: 'underline' }}>
+                Esqueci o PIN
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+        <RecoveryModal />
+      </>
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODE: BROWSER (Fake Google disguise)
+  // ══════════════════════════════════════════════════════════════════════════
   if (disguiseMode === 'browser' && !browserKeypadVisible) {
     const handleSearchSubmit = () => {
       if (searchQuery.trim().toLowerCase() === browserKeyword.toLowerCase().trim()) {
@@ -417,260 +475,251 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
     };
 
     return (
-      <Modal visible={visible} animationType="fade" transparent={false}>
-        <View style={[styles.browserContainer, { backgroundColor: '#121212' }]}>
-          {permission?.granted && (
-            <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-              <CameraView 
-                ref={cameraRef} 
-                facing="front" 
-                mode={cameraMode}
-                style={{ width: 16, height: 16 }} 
-              />
-            </View>
-          )}
-
-          {/* Browser Address Bar */}
-          <View style={styles.browserHeader}>
-            <Text style={{ marginRight: 6 }}>🔒</Text>
-            <Text style={styles.browserAddress} numberOfLines={1}>https://www.google.com</Text>
-            <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResultsVisible(false); }}>
-              <Text style={{ color: '#888', fontSize: 16 }}>↻</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Main View */}
-          <View style={styles.browserBody}>
-            {!searchResultsVisible ? (
-              // Mock Google Search Page
-              <View style={{ alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
-                {/* Logo Google */}
-                <View style={{ flexDirection: 'row', marginBottom: 30 }}>
-                  <Text style={[styles.googleLetter, { color: '#4285F4' }]}>G</Text>
-                  <Text style={[styles.googleLetter, { color: '#EA4335' }]}>o</Text>
-                  <Text style={[styles.googleLetter, { color: '#FBBC05' }]}>o</Text>
-                  <Text style={[styles.googleLetter, { color: '#4285F4' }]}>g</Text>
-                  <Text style={[styles.googleLetter, { color: '#34A853' }]}>l</Text>
-                  <Text style={[styles.googleLetter, { color: '#EA4335' }]}>e</Text>
-                </View>
-
-                {/* Simulated Google Search Bar */}
-                <View style={styles.searchBarContainer}>
-                  <Text style={{ color: '#9aa0a6', fontSize: 16, marginRight: 10 }}>🔍</Text>
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Pesquise ou digite um URL"
-                    placeholderTextColor="#9aa0a6"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    onSubmitEditing={handleSearchSubmit}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    returnKeyType="search"
-                  />
-                  {searchQuery !== '' && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                      <Text style={{ color: '#9aa0a6', fontSize: 16 }}>✕</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <View style={styles.browserShortcuts}>
-                  {[
-                    { label: 'Notícias', icon: '📰' },
-                    { label: 'Imagens', icon: '🖼️' },
-                    { label: 'Gmail', icon: '✉️' },
-                    { label: 'Drive', icon: '💾' }
-                  ].map((sc, i) => (
-                    <View key={i} style={styles.shortcutBtn}>
-                      <View style={styles.shortcutIconBox}>
-                        <Text style={{ fontSize: 20 }}>{sc.icon}</Text>
-                      </View>
-                      <Text style={styles.shortcutLabel}>{sc.label}</Text>
-                    </View>
-                  ))}
-                </View>
+      <>
+        <Modal visible={visible} animationType="fade" transparent={false}>
+          <View style={[styles.browserContainer, { backgroundColor: '#121212' }]}>
+            {permission?.granted && (
+              <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
+                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
               </View>
-            ) : (
-              // Mock Google Search Results
-              <View style={{ width: '100%', flex: 1, paddingHorizontal: 20 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 15 }}>
-                  <Text style={{ color: '#4285F4', fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold', marginRight: 10 }}>G</Text>
-                  <View style={[styles.searchBarContainer, { flex: 1, height: 40 }]}>
+            )}
+            <View style={styles.browserHeader}>
+              <Text style={{ marginRight: 6 }}>🔒</Text>
+              <Text style={styles.browserAddress} numberOfLines={1}>https://www.google.com</Text>
+              <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResultsVisible(false); }}>
+                <Text style={{ color: '#888', fontSize: 16 }}>↻</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.browserBody}>
+              {!searchResultsVisible ? (
+                <View style={{ alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
+                  <View style={{ flexDirection: 'row', marginBottom: 30 }}>
+                    {['G','o','o','g','l','e'].map((l, i) => (
+                      <Text key={i} style={[styles.googleLetter, { color: ['#4285F4','#EA4335','#FBBC05','#4285F4','#34A853','#EA4335'][i] }]}>{l}</Text>
+                    ))}
+                  </View>
+                  <View style={styles.searchBarContainer}>
+                    <Text style={{ color: '#9aa0a6', marginRight: 8 }}>🔍</Text>
                     <TextInput
-                      style={[styles.searchInput, { fontSize: 13 }]}
+                      style={styles.searchInput}
+                      placeholder="Pesquisar no Google"
+                      placeholderTextColor="#9aa0a6"
                       value={searchQuery}
                       onChangeText={setSearchQuery}
                       onSubmitEditing={handleSearchSubmit}
-                      autoCapitalize="none"
-                      autoCorrect={false}
                       returnKeyType="search"
+                      autoCapitalize="none"
                     />
                   </View>
+                  <View style={styles.browserShortcuts}>
+                    {['YouTube','Gmail','Maps','News'].map((s, i) => (
+                      <View key={i} style={styles.shortcutBtn}>
+                        <View style={styles.shortcutIconBox}>
+                          <Text style={{ fontSize: 20 }}>{['📺','📧','🗺️','📰'][i]}</Text>
+                        </View>
+                        <Text style={styles.shortcutLabel}>{s}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-                
-                <Text style={styles.resultsHeader}>Aproximadamente 0 resultados para &quot;{searchQuery}&quot;</Text>
-
-                <View style={styles.resultCard}>
-                  <Text style={styles.resultTitle}>Nenhum resultado de inteligência pública encontrado</Text>
-                  <Text style={styles.resultSnippet}>
-                    Verifique sua conexão ou digite termos adicionais. O tráfego de dados para este servidor está encriptado com protocolo de ponta-a-ponta.
-                  </Text>
+              ) : (
+                <View style={{ width: '100%', paddingHorizontal: 20 }}>
+                  <Text style={styles.resultsHeader}>Cerca de 1.230.000.000 resultados (0,42 segundos)</Text>
+                  <View style={styles.resultCard}>
+                    <Text style={styles.resultTitle}>Resultado para: {searchQuery}</Text>
+                    <Text style={styles.resultSnippet}>Não foram encontradas informações relevantes para sua pesquisa. Tente refinar os termos usados.</Text>
+                  </View>
+                  <TouchableOpacity style={styles.backSearchBtn} onPress={() => setSearchResultsVisible(false)}>
+                    <Text style={styles.backSearchBtnText}>Voltar para o Buscador</Text>
+                  </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity 
-                  style={styles.backSearchBtn}
-                  onPress={() => setSearchResultsVisible(false)}
-                >
-                  <Text style={styles.backSearchBtnText}>Voltar para o Buscador</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+              )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+        <RecoveryModal />
+      </>
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODE: CALCULATOR (iOS-style disguise — PIN typed via number keys, = validates)
+  // ══════════════════════════════════════════════════════════════════════════
   if (disguiseMode === 'calculator') {
+    // Rows 1-4: normal 4-column grid
+    const topRows = [
+      ['AC', '⌫', '%', '/'],
+      ['7',  '8', '9', 'x'],
+      ['4',  '5', '6', '-'],
+      ['1',  '2', '3', '+'],
+    ];
+
+    const renderCalcBtn = (key: string, ki: number, extraStyle?: any, textExtra?: any) => {
+      const isOp  = ['/', 'x', '-', '+', '='].includes(key);
+      const isTop = ['AC', '⌫', '%'].includes(key);
+      return (
+        <TouchableOpacity
+          key={ki}
+          onPress={() => handleCalcPress(key)}
+          activeOpacity={0.7}
+          style={[styles.calcBtn, isOp && styles.calcBtnOp, isTop && styles.calcBtnTop, extraStyle]}
+        >
+          <Text style={[styles.calcBtnText, isTop && { color: '#000' }, textExtra]}>{key}</Text>
+        </TouchableOpacity>
+      );
+    };
+
     return (
+      <>
+        <Modal visible={visible} animationType="fade" transparent={false}>
+          <View style={{ flex: 1, backgroundColor: '#000' }}>
+            {permission?.granted && (
+              <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
+                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
+              </View>
+            )}
+
+            {/* Display */}
+            <View style={styles.calcDisplay}>
+              <Text style={styles.calcDisplayText} numberOfLines={1} adjustsFontSizeToFit>
+                {calcDisplay}
+              </Text>
+            </View>
+
+            {/* Keypad */}
+            <View style={styles.calcKeypad}>
+              {/* Rows 1-4 */}
+              {topRows.map((row, ri) => (
+                <View key={ri} style={styles.calcRow}>
+                  {row.map((key, ki) => renderCalcBtn(key, ki))}
+                </View>
+              ))}
+
+              {/* Row 5: [0 (wide)], [.], [=] */}
+              <View style={styles.calcRow}>
+                {/* Zero: pill, flex:2, text left-aligned */}
+                <TouchableOpacity
+                  onPress={() => handleCalcPress('0')}
+                  activeOpacity={0.7}
+                  style={styles.calcBtnZero}
+                >
+                  <Text style={[styles.calcBtnText, { paddingLeft: 28 }]}>0</Text>
+                </TouchableOpacity>
+                {renderCalcBtn('.', 1)}
+                {renderCalcBtn('=', 2, styles.calcBtnOp)}
+              </View>
+            </View>
+          </View>
+        </Modal>
+        <RecoveryModal />
+      </>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODE: STANDARD PIN / GEOMETRIC PIN (default)
+  // ══════════════════════════════════════════════════════════════════════════
+  return (
+    <>
       <Modal visible={visible} animationType="fade" transparent={false}>
-        <View style={[styles.container, { backgroundColor: '#000' }]}>
-          
-          {/* Câmera Oculta para capturar invasores no Modo Calculadora */}
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          {customBg && (
+            <Animated.Image source={{ uri: customBg }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+          )}
+          {customBg && (
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
+          )}
           {permission?.granted && (
             <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-              <CameraView 
-                ref={cameraRef} 
-                facing="front" 
-                mode={cameraMode}
-                style={{ width: 16, height: 16 }} 
-              />
+              <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
             </View>
           )}
 
-          <View style={styles.calcDisplayContainer}>
-            <Text style={styles.calcLogo}>K</Text>
-            <Text style={styles.calcText} numberOfLines={1} adjustsFontSizeToFit>{calcDisplay}</Text>
-          </View>
-          <View style={styles.calcKeypad}>
-            {['AC','+/-','%','/','7','8','9','x','4','5','6','-','1','2','3','+','0','.','='].map((key, i) => {
-              const isOpCol = ['/','x','-','+','='].includes(key);
-              const isTopRow = ['AC','+/-','%'].includes(key);
-              const isZero = key === '0';
+          <MaskedView
+            maskElement={<Text style={[styles.title, { backgroundColor: 'transparent', textAlign: 'center' }]}>StashFlix</Text>}
+          >
+            <LinearGradient
+              colors={['#FF0033', '#FF4500']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={[styles.title, { opacity: 0, textAlign: 'center' }]}>StashFlix</Text>
+            </LinearGradient>
+          </MaskedView>
+
+          <MaskedView
+            maskElement={
+              <Text style={[styles.subtitle, { backgroundColor: 'transparent', textAlign: 'center' }]}>
+                {isRecording ? 'VERIFICANDO PIN...' : (errorVisible ? 'ACESSO NEGADO' : 'SISTEMA TRANCADO')}
+              </Text>
+            }
+          >
+            <LinearGradient
+              colors={errorVisible ? ['#FF0033', '#AA0000'] : ['#FF0033', '#FF6B00']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={[styles.subtitle, { opacity: 0, textAlign: 'center' }]}>
+                {isRecording ? 'VERIFICANDO PIN...' : (errorVisible ? 'ACESSO NEGADO' : 'SISTEMA TRANCADO')}
+              </Text>
+            </LinearGradient>
+          </MaskedView>
+
+          <Animated.View style={[styles.display, animatedStyle]}>
+            {[0, 1, 2, 3].map((i) => {
+              const isFilled = pin.length > i;
               return (
-                <TouchableOpacity 
-                  key={i} 
-                  style={[
-                    styles.calcKey, 
-                    isOpCol && styles.calcKeyOp,
-                    isTopRow && styles.calcKeyTop,
-                    isZero && { width: '47%', alignItems: 'flex-start', paddingLeft: 35 }
-                  ]} 
-                  onPress={() => handleCalcPress(key)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.calcKeyText, 
-                    isTopRow && { color: '#000' }
-                  ]}>{key}</Text>
-                </TouchableOpacity>
+                <View key={i} style={[
+                  styles.dot,
+                  { borderColor: errorVisible ? '#FF0033' : (isFilled ? '#00FF66' : '#333') },
+                  isFilled && { backgroundColor: errorVisible ? '#FF0033' : '#00FF66' }
+                ]} />
               );
             })}
+          </Animated.View>
+
+          <View style={styles.keypad}>
+            {['1','2','3','4','5','6','7','8','9','','0','<'].map((key, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  lockStyle === 'standard' ? styles.keyStandardWrapper : styles.keyGeometricWrapper,
+                  key === '' && styles.keyEmpty,
+                  key === '<' && styles.keyDeleteWrapper,
+                ]}
+                onPress={() => { if (key === '<') handleDelete(); else if (key !== '') handlePress(key); }}
+                disabled={key === ''}
+                activeOpacity={0.6}
+              >
+                <View style={[
+                  lockStyle === 'standard' ? styles.keyStandardInner : styles.keyGeometricInner,
+                  key === '<' && styles.keyDeleteInner,
+                ]}>
+                  {key === '<' ? (
+                    <Text style={[styles.keyText, lockStyle === 'geometric' && styles.textStraight, { color: '#FF0033' }]}>⌫</Text>
+                  ) : (
+                    <Text style={[styles.keyText, lockStyle === 'geometric' && styles.textStraight, { color: '#FFF' }]}>{key}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
+
+          <TouchableOpacity onPress={() => setShowRecovery(true)} style={{ marginTop: 30 }}>
+            <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 13, textDecorationLine: 'underline' }}>
+              Esqueci o PIN
+            </Text>
+          </TouchableOpacity>
         </View>
       </Modal>
-    );
-  }
-
-  return (
-    <Modal visible={visible} animationType="fade" transparent={false}>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        
-        {customBg && (
-          <Animated.Image 
-            source={{ uri: customBg }} 
-            style={StyleSheet.absoluteFillObject} 
-            resizeMode="cover" 
-          />
-        )}
-        
-        {/* Overlay Escuro para garantir leitura dos números */}
-        {customBg && (
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
-        )}
-
-        {/* Câmera Oculta para capturar invasores */}
-        {permission?.granted && (
-          <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-            <CameraView 
-              ref={cameraRef} 
-              facing="front" 
-              mode="picture"
-              style={{ width: 16, height: 16 }} 
-            />
-          </View>
-        )}
-
-        <Text style={[styles.title, { color: theme.text }]}>StashFlix</Text>
-        <Text style={[styles.subtitle, { color: errorVisible ? theme.error : theme.textSecondary }]}>
-          {isRecording ? 'VERIFICANDO PIN...' : (errorVisible ? 'ACESSO NEGADO' : 'SISTEMA TRANCADO')}
-        </Text>
-        
-        <Animated.View style={[styles.display, animatedStyle]}>
-          {[0, 1, 2, 3].map((i) => {
-            const isFilled = pin.length > i;
-            return (
-              <View key={i} style={[
-                styles.dot, 
-                { borderColor: errorVisible ? '#FF0033' : (isFilled ? '#00FF66' : '#333') }, 
-                isFilled && { 
-                  backgroundColor: errorVisible ? '#FF0033' : '#00FF66',
-                  shadowColor: errorVisible ? '#FF0033' : '#00FF66',
-                  shadowOpacity: 0.8,
-                  shadowRadius: 10,
-                  elevation: 8
-                }
-              ]} />
-            );
-          })}
-        </Animated.View>
-
-        <View style={styles.keypad}>
-          {['1','2','3','4','5','6','7','8','9','','0','<'].map((key, i) => (
-            <TouchableOpacity 
-              key={i} 
-              style={[
-                lockStyle === 'standard' ? styles.keyStandardWrapper : styles.keyGeometricWrapper, 
-                key === '' && styles.keyEmpty,
-                key === '<' && styles.keyDeleteWrapper
-              ]} 
-              onPress={() => {
-                if (key === '<') handleDelete();
-                else if (key !== '') handlePress(key);
-              }}
-              disabled={key === ''}
-              activeOpacity={0.6}
-            >
-              <View style={[
-                lockStyle === 'standard' ? styles.keyStandardInner : styles.keyGeometricInner,
-                key === '<' && styles.keyDeleteInner
-              ]}>
-                {key === '<' ? (
-                  <Text style={[styles.keyText, lockStyle === 'geometric' && styles.textStraight, { color: '#FF0033' }]}>⌫</Text>
-                ) : (
-                  <Text style={[styles.keyText, lockStyle === 'geometric' && styles.textStraight, { color: '#FFF' }]}>{key}</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </Modal>
+      <RecoveryModal />
+    </>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  // Standard / Geometric PIN screen
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505' },
   title: { fontSize: 28, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 3, color: '#FFF' },
   subtitle: { fontSize: 12, fontFamily: 'Inter_600SemiBold', marginTop: 10, marginBottom: 50, letterSpacing: 2 },
@@ -678,26 +727,67 @@ const styles = StyleSheet.create({
   dot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2 },
   keypad: { width: 320, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15 },
   keyGeometricWrapper: { width: 80, height: 80, alignItems: 'center', justifyContent: 'center', marginVertical: 5 },
-  keyGeometricInner: { width: 70, height: 70, backgroundColor: '#111', borderWidth: 1, borderColor: '#333', transform: [{ rotate: '45deg' }], alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.8, shadowRadius: 10, elevation: 5, borderRadius: 12 },
+  keyGeometricInner: { width: 70, height: 70, backgroundColor: '#111', borderWidth: 1, borderColor: '#333', transform: [{ rotate: '45deg' }], alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   keyStandardWrapper: { width: 80, height: 80, alignItems: 'center', justifyContent: 'center', marginVertical: 5 },
   keyStandardInner: { width: 70, height: 70, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: '#333', alignItems: 'center', justifyContent: 'center', borderRadius: 35 },
   keyEmpty: { opacity: 0 },
-  keyDeleteWrapper: { },
+  keyDeleteWrapper: {},
   keyDeleteInner: { backgroundColor: '#1A0A0A', borderColor: '#3A1010' },
   keyText: { fontSize: 28, fontFamily: 'SpaceGrotesk_400Regular' },
   textStraight: { transform: [{ rotate: '-45deg' }] },
-  
-  // Calculator Styles
-  calcDisplayContainer: { width: '100%', height: 250, justifyContent: 'space-between', alignItems: 'flex-end', padding: 30, paddingBottom: 10, backgroundColor: '#000' },
-  calcLogo: { position: 'absolute', top: 50, left: 30, fontSize: 32, fontFamily: 'SpaceGrotesk_700Bold', color: '#333' },
-  calcText: { fontSize: 80, fontWeight: '300', color: '#FFF' },
-  calcKeypad: { width: '100%', flex: 1, flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#000', padding: 10, justifyContent: 'space-between' },
-  calcKey: { width: '22%', aspectRatio: 1, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center', borderRadius: 100, marginBottom: 15 },
-  calcKeyOp: { backgroundColor: '#FF9F0A' },
-  calcKeyTop: { backgroundColor: '#A5A5A5' },
-  calcKeyText: { fontSize: 32, color: '#FFF', fontFamily: 'SpaceGrotesk_400Regular' },
 
-  // Crash Styles
+  // ── Calculator (iOS style) ──────────────────────────────────────────────
+  calcDisplay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+    backgroundColor: '#000',
+  },
+  calcDisplayText: {
+    fontSize: 80,
+    fontWeight: '200',
+    color: '#FFF',
+    maxWidth: SCREEN_W - 48,
+  },
+  calcKeypad: {
+    backgroundColor: '#000',
+    paddingBottom: 20,
+    paddingHorizontal: 12,
+  },
+  calcRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  // Each button: flex:1 + aspectRatio:1 = perfect circle that fills available space
+  calcBtn: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 999,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calcBtnOp: { backgroundColor: '#FF9F0A' },
+  calcBtnTop: { backgroundColor: '#A5A5A5' },
+  // Zero: flex:2 + fixed height to match other buttons, pill shape, text left
+  calcBtnZero: {
+    flex: 2,
+    height: (SCREEN_W - 24 - 3 * 12) / 4, // same height as other buttons
+    borderRadius: 999,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  calcBtnText: {
+    fontSize: 28,
+    color: '#FFF',
+    fontWeight: '400',
+  },
+
+  // ── Crash Disguise ─────────────────────────────────────────────────────
   crashContainer: { flex: 1, backgroundColor: '#121212', justifyContent: 'center', alignItems: 'center' },
   crashDialog: { width: 300, backgroundColor: '#1E1E1E', borderRadius: 8, padding: 24, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
   crashTitle: { fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold', color: '#FFF' },
@@ -705,7 +795,7 @@ const styles = StyleSheet.create({
   crashButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 16 },
   crashButtonText: { fontSize: 14, fontFamily: 'SpaceGrotesk_700Bold', color: '#8AB4F8', letterSpacing: 0.5 },
 
-  // Browser Disguise Styles
+  // ── Browser Disguise ───────────────────────────────────────────────────
   browserContainer: { flex: 1, paddingTop: 40 },
   browserHeader: { height: 45, backgroundColor: '#1f2023', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#2f3033' },
   browserAddress: { flex: 1, color: '#e8eaed', fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'left' },
@@ -722,5 +812,14 @@ const styles = StyleSheet.create({
   resultTitle: { color: '#8ab4f8', fontSize: 16, fontFamily: 'Inter_600SemiBold', marginBottom: 8 },
   resultSnippet: { color: '#bdc1c6', fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 18 },
   backSearchBtn: { backgroundColor: '#4285F4', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 30 },
-  backSearchBtnText: { color: '#000', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 14 }
+  backSearchBtnText: { color: '#000', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 14 },
+
+  // ── Recovery Modal ─────────────────────────────────────────────────────
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { width: '100%', borderRadius: 16, borderWidth: 1, padding: 24 },
+  modalTitle: { fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 12, textAlign: 'center' },
+  input: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 15, fontFamily: 'Inter_400Regular', marginBottom: 16 },
+  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalBtn: { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
+  modalBtnText: { color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 15 },
 });

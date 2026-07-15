@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, Pressable, Alert, Switch, ScrollView, Modal, Image, ActivityIndicator, Dimensions } from 'react-native';
-import { registerDevice } from '@/src/services/ApiService';
-import * as SecureStore from 'expo-secure-store';
-import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert, Switch, ScrollView, Modal, Image, ActivityIndicator, Dimensions, TextInput, TouchableOpacity } from 'react-native';
+import { registerDevice, deleteUserAccount } from '@/src/services/ApiService';
+import * as SecureStore from '@/src/services/SecureStoreManager';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { auth } from '@/src/services/FirebaseConfig';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,6 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useAppContext } from '@/src/contexts/AppContext';
 import * as ScreenCapture from 'expo-screen-capture';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
+import { getCloudTelemetry } from '@/src/services/VaultService';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,18 +18,28 @@ import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Eas
 export default function SettingsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const scrollViewRef = useRef<ScrollView>(null);
   const { userPlan, setUserPlan, activePalette: theme } = useAppContext();
   
   const [cloudSync, setCloudSync] = useState(false);
   const [breakInAlerts, setBreakInAlerts] = useState(true);
   const [ghostMode, setGhostMode] = useState(false);
   const [spyMic, setSpyMic] = useState(false);
+  const [spyCam, setSpyCam] = useState(false);
   const [decoyCount, setDecoyCount] = useState(0);
   const [mainCount, setMainCount] = useState(0);
   const [trashCount, setTrashCount] = useState(0);
+  const [cloudStats, setCloudStats] = useState({ main: { count: 0, bytes: 0 }, decoy: { count: 0, bytes: 0 }, trash: { count: 0, bytes: 0 }, intruders: { count: 0, bytes: 0 } });
   const [wifiOnly, setWifiOnly] = useState(true);
   const [blockPrints, setBlockPrints] = useState(false);
   const [intruderVideoDuration, setIntruderVideoDuration] = useState<'0' | '5' | '15' | '30'>('0');
+  const [deadManSwitch, setDeadManSwitch] = useState<string>('Desativado');
+  // Pin Management
+  const [pinModalVisible, setPinModalVisible] = useState(false);
+  const [pinTypeToEdit, setPinTypeToEdit] = useState<'user_pin'|'fake_pin'|'kamikaze_pin'>('user_pin');
+  const [currentPinValue, setCurrentPinValue] = useState('');
+  const [newPinValue, setNewPinValue] = useState('');
+
 
   // Custom Premium Wallpaper Crop Modal states
   const [cropModalVisible, setCropModalVisible] = useState(false);
@@ -71,12 +82,18 @@ export default function SettingsScreen() {
       if (user) setUserPlan((user as any).plan || 'FREE');
       const alertsPref = await SecureStore.getItemAsync('breakin_alerts');
       if (alertsPref === 'false') setBreakInAlerts(false);
+
+      const syncPref = await SecureStore.getItemAsync('cloud_sync_enabled');
+      if (syncPref === 'true') setCloudSync(true);
       
       const ghostPref = await SecureStore.getItemAsync('ghost_mode_enabled');
       if (ghostPref === 'true') setGhostMode(true);
 
       const spyPref = await SecureStore.getItemAsync('spy_mic_enabled');
       if (spyPref === 'true') setSpyMic(true);
+
+      const spyCamPref = await SecureStore.getItemAsync('spy_cam_enabled');
+      if (spyCamPref === 'true') setSpyCam(true);
 
       const wifiPref = await SecureStore.getItemAsync('wifi_only');
       if (wifiPref === 'false') setWifiOnly(false);
@@ -86,6 +103,13 @@ export default function SettingsScreen() {
 
       const videoPref = await SecureStore.getItemAsync('intruder_video_duration');
       if (videoPref) setIntruderVideoDuration(videoPref as any);
+
+      const autoDestruct = await SecureStore.getItemAsync('auto_destruct_days');
+      if (autoDestruct) {
+        setDeadManSwitch(`${autoDestruct} Dias`);
+      } else {
+        setDeadManSwitch('Desativado');
+      }
 
       // Função utilitária para contar arquivos
       const countFilesInDir = async (dirPath: string) => {
@@ -115,6 +139,12 @@ export default function SettingsScreen() {
          const trashFiles = await FileSystem.readDirectoryAsync(FileSystem.documentDirectory + 'SecureVault/Trash/');
          setTrashCount(trashFiles.length);
       } catch (e) {}
+
+      // Busca Telemetria Real do Cloud
+      try {
+        const stats = await getCloudTelemetry();
+        if (stats) setCloudStats(stats);
+      } catch (e) {}
     };
     fetchSettings();
   }, []);
@@ -122,9 +152,42 @@ export default function SettingsScreen() {
   const handleToggleAlerts = async (value: boolean) => {
     setBreakInAlerts(value);
     await SecureStore.setItemAsync('breakin_alerts', value ? 'true' : 'false');
+    if (value) {
+      await SecureStore.setItemAsync('anti_invasion_activated_at', new Date().toISOString());
+      // Se ligar a foto, desliga o vídeo
+      setIntruderVideoDuration('0');
+      await SecureStore.setItemAsync('intruder_video_duration', '0');
+    } else {
+      await SecureStore.deleteItemAsync('anti_invasion_activated_at');
+    }
     try {
       await syncSettingsToCloud();
     } catch (e) {}
+  };
+
+
+  const handleOpenPinModal = (type: 'user_pin' | 'fake_pin' | 'kamikaze_pin') => {
+    setPinTypeToEdit(type);
+    setCurrentPinValue('');
+    setNewPinValue('');
+    setPinModalVisible(true);
+  };
+
+  const handleSavePin = async () => {
+    if (!newPinValue || newPinValue.length < 4) {
+      Alert.alert('Erro', 'O novo PIN deve ter pelo menos 4 dgitos.');
+      return;
+    }
+    const currentStored = await SecureStore.getItemAsync(pinTypeToEdit);
+    if (currentStored && currentStored !== currentPinValue) {
+      Alert.alert('Erro', 'O PIN atual est incorreto.');
+      return;
+    }
+    await SecureStore.setItemAsync(pinTypeToEdit, newPinValue);
+    Alert.alert('Sucesso', 'PIN atualizado com sucesso.');
+    setPinModalVisible(false);
+    setCurrentPinValue('');
+    setNewPinValue('');
   };
 
   const handleToggleGhostMode = async (value: boolean) => {
@@ -190,6 +253,30 @@ export default function SettingsScreen() {
     }
     setSpyMic(value);
     await SecureStore.setItemAsync('spy_mic_enabled', value ? 'true' : 'false');
+    if (value) {
+      // Se ligar o microfone, desliga o vídeo
+      setIntruderVideoDuration('0');
+      await SecureStore.setItemAsync('intruder_video_duration', '0');
+    }
+    try {
+      await syncSettingsToCloud();
+    } catch (e) {}
+  };
+
+  const handleToggleSpyCam = async (value: boolean) => {
+    if (value && userPlan !== 'ULTRA') {
+      Alert.alert(
+        'Acesso Restrito', 
+        'A Câmera Espiã é um recurso exclusivo do Plano ULTRA.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
+        ]
+      );
+      return;
+    }
+    setSpyCam(value);
+    await SecureStore.setItemAsync('spy_cam_enabled', value ? 'true' : 'false');
     try {
       await syncSettingsToCloud();
     } catch (e) {}
@@ -208,13 +295,14 @@ export default function SettingsScreen() {
       return;
     }
     setCloudSync(value);
+    await SecureStore.setItemAsync('cloud_sync_enabled', value ? 'true' : 'false');
+    try {
+      await syncSettingsToCloud();
+    } catch (e) {}
     
     // Executa a Sincronização Serverless
     if (value) {
-      Alert.alert('Sincronização Iniciada', 'Comprimindo e enviando arquivos diretamente para a Nuvem de forma segura...');
-      const { syncVaultToCloud } = await import('@/src/services/VaultService');
-      const total = await syncVaultToCloud(false); // No need to pass isFakeVault here directly unless we want to, wait we can just pass false. Actually let's assume we sync the main vault.
-      Alert.alert('Sucesso', `${total} arquivos sincronizados com compressão On-Device.`);
+      Alert.alert('Sincronização', 'Sincronização em tempo real ativada com a Nuvem!');
     }
   };
 
@@ -238,6 +326,28 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      "Excluir Conta Permanentemente",
+      "Isso apagará seus dados de backup na nuvem e destruirá sua conta. O cofre local também será apagado. Esta ação é irreversível.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "EXCLUIR TUDO", 
+          style: "destructive",
+          onPress: async () => {
+            await deleteUserAccount();
+            const { nukeVault } = await import('@/src/services/VaultService');
+            await nukeVault();
+            await SecureStore.deleteItemAsync('user_pin');
+            Alert.alert("Adeus", "Conta e arquivos destruídos.");
+            auth.signOut();
+          }
+        }
+      ]
+    );
+  };
+
   const handleSetBackground = async () => {
     if (userPlan === 'FREE') {
       Alert.alert(
@@ -250,11 +360,13 @@ export default function SettingsScreen() {
       );
       return;
     }
+    (global as any).ignoreNextBackground = true;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false, // Disables native editor
       quality: 0.9,
     });
+    setTimeout(() => { (global as any).ignoreNextBackground = false; }, 1000);
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setSelectedImageUri(result.assets[0].uri);
       setImageWidth(result.assets[0].width);
@@ -272,6 +384,16 @@ export default function SettingsScreen() {
       handleSetBackground();
     }
   }, [params.triggerBg]);
+
+  useEffect(() => {
+    if (params.triggerPin === 'true') {
+      router.setParams({ triggerPin: undefined });
+      setTimeout(() => {
+        // Rola até o final da tela (onde as configurações de PIN estão localizadas)
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 500);
+    }
+  }, [params.triggerPin]);
 
   const handleConfirmCrop = async () => {
     if (!selectedImageUri) return;
@@ -355,16 +477,19 @@ export default function SettingsScreen() {
     }
   };
 
-  const totalCount = mainCount + decoyCount + trashCount;
-  const maxCapacity = 10000;
-  const totalPercent = (totalCount / maxCapacity) * 100;
-  const mainPercent = (mainCount / maxCapacity) * 100;
-  const decoyPercent = (decoyCount / maxCapacity) * 100;
-  const trashPercent = (trashCount / maxCapacity) * 100;
-  const estimatedSize = (totalCount * 142) / 1024; // in MB
+  const maxCapacityBytes = userPlan === 'ULTRA' ? 100 * 1024 * 1024 * 1024 : (userPlan === 'PRO' ? 10 * 1024 * 1024 * 1024 : 1 * 1024 * 1024 * 1024);
+  const totalCloudBytes = cloudStats.main.bytes + cloudStats.decoy.bytes + cloudStats.trash.bytes + cloudStats.intruders.bytes;
+  
+  const totalPercent = Math.min((totalCloudBytes / maxCapacityBytes) * 100, 100);
+  const mainPercent = totalCloudBytes === 0 ? 0 : (cloudStats.main.bytes / totalCloudBytes) * 100;
+  const decoyPercent = totalCloudBytes === 0 ? 0 : (cloudStats.decoy.bytes / totalCloudBytes) * 100;
+  const trashPercent = totalCloudBytes === 0 ? 0 : (cloudStats.trash.bytes / totalCloudBytes) * 100;
+  const intruderPercent = totalCloudBytes === 0 ? 0 : (cloudStats.intruders.bytes / totalCloudBytes) * 100;
+  
+  const estimatedSizeMB = totalCloudBytes / (1024 * 1024); // in MB
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 100 }}>
+    <ScrollView ref={scrollViewRef} style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 100 }}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.text }]}>SISTEMA</Text>
         <Text style={[styles.headerSubtitle, { color: theme.textSecondary, opacity: 0.8 }]}>Painel de Controle e Segurança do StashFlix</Text>
@@ -435,14 +560,13 @@ export default function SettingsScreen() {
               <Text style={styles.statusText}>ONLINE</Text>
             </View>
           </View>
-
           {/* Progress Gauges Grid */}
           <View style={styles.telemetryBody}>
             {/* Left side: Outer gauge circle */}
             <View style={[styles.gaugeContainer, { borderColor: theme.border + '50' }]}>
               <View style={[styles.gaugeCircle, { backgroundColor: theme.background, borderColor: totalPercent > 0 ? theme.tint : theme.border + '33' }]}>
                 <Text style={[styles.gaugeValue, { color: theme.tint }]}>
-                  {totalPercent.toFixed(1)}%
+                  {totalPercent > 0 && totalPercent < 0.1 ? '< 0.1' : totalPercent.toFixed(1)}%
                 </Text>
                 <Text style={[styles.gaugeLabel, { color: theme.textSecondary, opacity: 0.6 }]}>OCUPADO</Text>
               </View>
@@ -455,7 +579,7 @@ export default function SettingsScreen() {
                 <View style={styles.channelInfo}>
                   <Text style={[styles.channelName, { color: theme.text }]}>Meu Cofre</Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {mainCount} itens ({mainPercent.toFixed(1)}%)
+                    {cloudStats.main.count} itens ({mainPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -473,7 +597,7 @@ export default function SettingsScreen() {
                 <View style={styles.channelInfo}>
                   <Text style={[styles.channelName, { color: theme.text }]}>Cofre Falso</Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {decoyCount} itens ({decoyPercent.toFixed(1)}%)
+                    {cloudStats.decoy.count} itens ({decoyPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -491,7 +615,7 @@ export default function SettingsScreen() {
                 <View style={styles.channelInfo}>
                   <Text style={[styles.channelName, { color: theme.text }]}>Lixeira</Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {trashCount} itens ({trashPercent.toFixed(1)}%)
+                    {cloudStats.trash.count} itens ({trashPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -500,6 +624,24 @@ export default function SettingsScreen() {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.gradientBar, { width: `${Math.max(2, trashPercent)}%` }]}
+                  />
+                </View>
+              </View>
+
+              {/* Channel 4: Evidências */}
+              <View style={styles.channelRow}>
+                <View style={styles.channelInfo}>
+                  <Text style={[styles.channelName, { color: theme.text }]}>Evidências</Text>
+                  <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
+                    {cloudStats.intruders.count} itens ({intruderPercent.toFixed(1)}%)
+                  </Text>
+                </View>
+                <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
+                  <LinearGradient
+                    colors={['#FF3B30', 'rgba(255, 59, 48, 0.15)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.gradientBar, { width: `${Math.max(2, intruderPercent)}%` }]}
                   />
                 </View>
               </View>
@@ -513,13 +655,15 @@ export default function SettingsScreen() {
               <Text style={[styles.gridValue, { color: theme.text }]}>AES-GCM-256</Text>
             </View>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>ESPAÇO ESTIMADO</Text>
-              <Text style={[styles.gridValue, { color: theme.text }]}>{estimatedSize.toFixed(2)} MB / 2 GB</Text>
+              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>ESPAÇO UTILIZADO</Text>
+              <Text style={[styles.gridValue, { color: theme.text }]}>
+                {estimatedSizeMB > 1024 ? (estimatedSizeMB / 1024).toFixed(2) + ' GB' : estimatedSizeMB.toFixed(2) + ' MB'} / {userPlan === 'ULTRA' ? '100 GB' : (userPlan === 'PRO' ? '10 GB' : '1 GB')}
+              </Text>
             </View>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
               <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>MODO ATUAL</Text>
               <Text style={[styles.gridValue, { color: theme.tint }]}>
-                {userPlan === 'PRO' ? 'PRO VIP' : 'FREE USER'}
+                {userPlan === 'ULTRA' ? 'ULTRA' : (userPlan === 'PRO' ? 'PRO VIP' : 'FREE USER')}
               </Text>
             </View>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
@@ -559,10 +703,10 @@ export default function SettingsScreen() {
             { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
           ]}
           onPress={() => {
-            if (userPlan === 'FREE') {
+            if (userPlan !== 'ULTRA') {
               Alert.alert(
                 'Acesso Restrito', 
-                'Gravar vídeo do intruso é um recurso exclusivo do Plano PRO.',
+                'Gravar vídeo do intruso é um recurso exclusivo do Plano ULTRA.',
                 [
                   { text: 'Cancelar', style: 'cancel' },
                   { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
@@ -574,21 +718,33 @@ export default function SettingsScreen() {
               "Gravação de Intruso", 
               "Quanto tempo a câmera deve gravar o invasor em vídeo oculto? (O PIN ficará bloqueado durante a gravação)",
               [
-                { text: "Apenas Foto (Padrão)", onPress: async () => {
+                { text: "Desativar Vídeo", onPress: async () => {
                   setIntruderVideoDuration('0');
                   await SecureStore.setItemAsync('intruder_video_duration', '0');
                 }},
                 { text: "5 Segundos", onPress: async () => {
                   setIntruderVideoDuration('5');
                   await SecureStore.setItemAsync('intruder_video_duration', '5');
+                  setBreakInAlerts(false);
+                  await SecureStore.setItemAsync('breakin_alerts', 'false');
+                  setSpyMic(false);
+                  await SecureStore.setItemAsync('spy_mic_enabled', 'false');
                 }},
                 { text: "15 Segundos", onPress: async () => {
                   setIntruderVideoDuration('15');
                   await SecureStore.setItemAsync('intruder_video_duration', '15');
+                  setBreakInAlerts(false);
+                  await SecureStore.setItemAsync('breakin_alerts', 'false');
+                  setSpyMic(false);
+                  await SecureStore.setItemAsync('spy_mic_enabled', 'false');
                 }},
                 { text: "30 Segundos", onPress: async () => {
                   setIntruderVideoDuration('30');
                   await SecureStore.setItemAsync('intruder_video_duration', '30');
+                  setBreakInAlerts(false);
+                  await SecureStore.setItemAsync('breakin_alerts', 'false');
+                  setSpyMic(false);
+                  await SecureStore.setItemAsync('spy_mic_enabled', 'false');
                 }}
               ]
             );
@@ -598,10 +754,10 @@ export default function SettingsScreen() {
             <View style={styles.textWrapper}>
               <View style={styles.titleRow}>
                 <Text style={[styles.optionText, { color: theme.text }]}>Gravação de Intruso</Text>
-                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
               </View>
               <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
-                {intruderVideoDuration === '0' ? 'Capturar apenas foto' : `Gravar vídeo oculto de ${intruderVideoDuration}s`}
+                {intruderVideoDuration === '0' ? 'Gravação desativada' : `Gravar vídeo oculto de ${intruderVideoDuration}s`}
               </Text>
             </View>
           </View>
@@ -617,7 +773,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.optionText, { color: theme.text }]}>Microfone Espião</Text>
                 <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
               </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Grava 15s de áudio ambiente após 3 falhas de PIN</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Grava 15s de áudio ambiente secretamente</Text>
             </View>
           </View>
           <Switch 
@@ -628,7 +784,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
 
         {/* Ghost Mode */}
         <View style={styles.optionRow}>
@@ -679,33 +835,44 @@ export default function SettingsScreen() {
             { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
           ]}
           onPress={() => {
+            if (userPlan !== 'ULTRA') {
+              Alert.alert(
+                'Acesso Restrito', 
+                'O Protocolo Dead Man\'s Switch é um recurso exclusivo do Plano ULTRA.',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
+                ]
+              );
+              return;
+            }
             Alert.alert(
               "Protocolo Dead Man's Switch", 
               "Quantos dias de inatividade até o cofre se autodestruir?",
               [
                 { text: "Desativado", onPress: async () => {
                   await SecureStore.deleteItemAsync('auto_destruct_days');
-                  try {
-                    syncSettingsToCloud().catch(() => {});
-                  } catch (e) {}
+                  setDeadManSwitch('Desativado');
+                  Alert.alert("Sucesso", "Protocolo Dead Man's Switch foi desativado.");
+                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
                 }},
                 { text: "7 Dias", onPress: async () => {
                   await SecureStore.setItemAsync('auto_destruct_days', '7');
-                  try {
-                    syncSettingsToCloud().catch(() => {});
-                  } catch (e) {}
+                  setDeadManSwitch('7 Dias');
+                  Alert.alert("Sucesso", "Protocolo configurado. O cofre será destruído após 7 dias de inatividade.");
+                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
                 }},
                 { text: "14 Dias", onPress: async () => {
                   await SecureStore.setItemAsync('auto_destruct_days', '14');
-                  try {
-                    syncSettingsToCloud().catch(() => {});
-                  } catch (e) {}
+                  setDeadManSwitch('14 Dias');
+                  Alert.alert("Sucesso", "Protocolo configurado. O cofre será destruído após 14 dias de inatividade.");
+                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
                 }},
                 { text: "30 Dias", onPress: async () => {
                   await SecureStore.setItemAsync('auto_destruct_days', '30');
-                  try {
-                    syncSettingsToCloud().catch(() => {});
-                  } catch (e) {}
+                  setDeadManSwitch('30 Dias');
+                  Alert.alert("Sucesso", "Protocolo configurado. O cofre será destruído após 30 dias de inatividade.");
+                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
                 }}
               ]
             );
@@ -713,8 +880,15 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Tempo de Autodestruição</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Apaga o cofre em caso de inatividade prolongada</Text>
+              <View style={styles.titleRow}>
+                <Text style={[styles.optionText, { color: theme.text }]}>Tempo de Autodestruição</Text>
+                <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
+              </View>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
+                {deadManSwitch === 'Desativado' 
+                  ? 'Apaga o cofre em caso de inatividade prolongada' 
+                  : `Ativo: Autodestruição em ${deadManSwitch}`}
+              </Text>
             </View>
           </View>
         </Pressable>
@@ -811,6 +985,38 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      
+      {/* SEÇÃO SEGURANÇA PIN */}
+      <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// GERENCIAMENTO DE PIN"}</Text>
+      <View style={[styles.sectionCard, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
+        <Pressable style={({ pressed }) => [styles.optionClickableRow, { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }]} onPress={() => handleOpenPinModal('user_pin')}>
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: theme.text }]}>Ver/Editar PIN Principal</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>O PIN principal da sua conta.</Text>
+            </View>
+          </View>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+        <Pressable style={({ pressed }) => [styles.optionClickableRow, { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }]} onPress={() => handleOpenPinModal('fake_pin')}>
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: theme.text }]}>Ver/Editar PIN de Fachada</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>PIN para acessar o cofre falso.</Text>
+            </View>
+          </View>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+        <Pressable style={({ pressed }) => [styles.optionClickableRow, { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }]} onPress={() => handleOpenPinModal('kamikaze_pin')}>
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: theme.text }]}>Ver/Editar PIN Kamikaze</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>O PIN que apaga tudo se digitado.</Text>
+            </View>
+          </View>
+        </Pressable>
+      </View>
+
       {/* SEÇÃO 4: CONTA */}
       <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// 04. CONTA & SISTEMA"}</Text>
       <View style={[styles.sectionCard, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
@@ -821,12 +1027,35 @@ export default function SettingsScreen() {
             styles.optionClickableRow,
             { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
           ]} 
-          onPress={() => auth.signOut()}
+          onPress={async () => {
+            await SecureStore.deleteItemAsync('has_onboarded');
+            await SecureStore.deleteItemAsync('user_pin');
+            await SecureStore.deleteItemAsync('fake_pin');
+            await SecureStore.deleteItemAsync('kamikaze_pin');
+            auth.signOut();
+          }}
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
               <Text style={[styles.optionText, { color: theme.textSecondary }]}>Logout</Text>
               <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Desconectar de {auth.currentUser?.email}</Text>
+            </View>
+          </View>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
+        {/* Excluir Conta */}
+        <Pressable 
+          style={({ pressed }) => [
+            styles.optionClickableRow,
+            { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
+          ]} 
+          onPress={handleDeleteAccount}
+        >
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: '#FF0033' }]}>Excluir Conta e Dados da Nuvem</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Apaga os dados no Firebase (Compliance)</Text>
             </View>
           </View>
         </Pressable>
@@ -996,6 +1225,39 @@ export default function SettingsScreen() {
           )}
         </View>
       </Modal>
+    
+      {/* PIN Edit Modal */}
+      <Modal visible={pinModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {pinTypeToEdit === 'user_pin' ? 'PIN Principal' : pinTypeToEdit === 'fake_pin' ? 'PIN de Fachada' : 'PIN Kamikaze'}
+            </Text>
+            <Text style={{ color: theme.textSecondary, marginBottom: 15 }}>
+              PIN Atual (cadastrado na sua conta): {currentPinValue || 'Nenhum'}
+            </Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+              placeholder="Digite o novo PIN (4 dígitos)"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              value={newPinValue}
+              onChangeText={setNewPinValue}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
+                <Text style={[styles.modalBtnText, { color: theme.text }]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={handleSavePin}>
+                <Text style={styles.modalBtnText}>Salvar Novo PIN</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }

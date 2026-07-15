@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import { useTheme } from '../context/ThemeContext';
 import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 

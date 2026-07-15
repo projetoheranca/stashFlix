@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppContext } from '@/src/contexts/AppContext';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import { StatusBar } from 'expo-status-bar';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,7 +58,7 @@ export default function DecoyScreen() {
 
   const loadDeviceAlbums = async () => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(false, ['photo', 'video']);
       if (status === 'granted') {
         const list = await MediaLibrary.getAlbumsAsync({ includeSmartAlbums: true });
         setDeviceAlbums(list.filter(a => a.assetCount > 0));
@@ -81,7 +81,7 @@ export default function DecoyScreen() {
       const assets = await MediaLibrary.getAssetsAsync({
         albumId: deviceAlbum.id,
         first: 100,
-        mediaType: ['photo', 'video', 'audio']
+        mediaType: ['photo', 'video']
       });
 
       const albumName = deviceAlbum.title || 'DecoyImport';
@@ -328,58 +328,11 @@ export default function DecoyScreen() {
             </View>
           )}
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.saveButton,
-              { backgroundColor: 'rgba(0, 216, 255, 0.1)', borderColor: '#00D8FF', borderWidth: 1 },
-              pressed && { transform: [{ scale: 0.98 }], backgroundColor: 'rgba(0, 216, 255, 0.2)' }
-            ]}
-            onPress={loadDeviceAlbums}
-          >
-            <Ionicons name="cloud-upload-outline" size={16} color="#00D8FF" style={{ marginRight: 8 }} />
-            <Text style={[styles.saveButtonText, { color: '#00D8FF' }]}>IMPORTAR PASTA DO CELULAR</Text>
-          </Pressable>
+
         </View>
       </View>
 
-      {showDevicePicker && (
-        <View style={[styles.card, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '50', marginTop: 15 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-            <Text style={{ color: '#00D8FF', fontSize: 11, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 1 }}>SELECIONE A PASTA LOCAL</Text>
-            <Pressable onPress={() => setShowDevicePicker(false)} style={{ padding: 4 }}>
-              <Ionicons name="close" size={20} color={theme.textSecondary} />
-            </Pressable>
-          </View>
 
-          {importing ? (
-            <View style={{ paddingVertical: 30, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#00D8FF" />
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 12, fontFamily: 'Inter_400Regular' }}>Criptografando mídias para o cofre falso...</Text>
-            </View>
-          ) : (
-            deviceAlbums.map((album) => (
-              <Pressable
-                key={album.id}
-                style={({ pressed }) => [
-                  styles.deviceAlbumSelectRow,
-                  { borderBottomColor: theme.border + '22' },
-                  pressed && { backgroundColor: theme.surfaceHighlight + '40' }
-                ]}
-                onPress={() => handleImportToDecoy(album)}
-              >
-                <Ionicons name="images-outline" size={18} color={theme.textSecondary} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontFamily: 'Inter_600SemiBold' }} numberOfLines={1}>
-                    {album.title}
-                  </Text>
-                  <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2 }}>{album.assetCount} arquivos</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} opacity={0.5} />
-              </Pressable>
-            ))
-          )}
-        </View>
-      )}
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 30 }]}>{"// 03. PROTOCOLO KAMIKAZE [PRO]"}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: '#FF0033' + '50', borderWidth: 1.5 }]}>

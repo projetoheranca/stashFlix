@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
@@ -29,6 +29,9 @@ export default function OnboardingScreen() {
       </View>
 
       <View style={styles.footer}>
+        <Text style={[styles.privacyText, { color: theme.textSecondary }]}>
+          Ao iniciar a sequência, você concorda com nossos <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/terms')}>Termos de Uso</Text>, <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/privacy')}>Política de Privacidade</Text> (LGPD) e <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/support')}>Suporte</Text>. Seus arquivos não saem do seu aparelho sem permissão expressa.
+        </Text>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.tint, shadowColor: theme.tint }]}
           onPress={() => router.push('/permissions')}
@@ -89,4 +92,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: 1,
   },
+  privacyText: {
+    fontSize: 10,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 14,
+  }
 });

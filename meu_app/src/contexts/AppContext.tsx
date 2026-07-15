@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 import { Palettes, ThemePalette } from '@/constants/theme';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -94,11 +94,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       if (savedPlan) setUserPlanState(savedPlan);
 
       // Sincroniza silenciosamente o status com o backend
-      import('@/src/services/ApiService').then(async ({ registerDevice }) => {
+      import('@/src/services/ApiService').then(async ({ registerDevice, cleanLegacyPlanField }) => {
         const user = await registerDevice();
         if (user && user.plan) {
           setUserPlanState(user.plan);
         }
+        // Remove o campo 'plan' legado do Firebase (campo antigo, não mais usado)
+        await cleanLegacyPlanField();
       }).catch(() => {});
 
       // Load custom colors for system theme mode
@@ -146,7 +148,41 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             if (prefs.app_theme) setThemeState(prefs.app_theme);
             if (prefs.app_color_scheme) setColorSchemeState(prefs.app_color_scheme);
             if (prefs.disguise_mode) setDisguiseModeState(prefs.disguise_mode);
-            if (prefs.user_plan) setUserPlanState(prefs.user_plan);
+            
+            let finalPlan = prefs.user_plan || 'FREE';
+
+            // ── Validação Real de Assinatura com RevenueCat ──
+            try {
+              const Constants = (await import('expo-constants')).default;
+              const isExpoGo = Constants.appOwnership === 'expo';
+              
+              if (!isExpoGo) {
+                const Purchases = (await import('react-native-purchases')).default;
+                // Vincula o RevenueCat ao UID do Firebase (cross-device sync)
+                await Purchases.logIn(user.uid);
+                const customerInfo = await Purchases.getCustomerInfo();
+                
+                // Verifica se a assinatura está ativa na Apple/Google (ULTRA > PRO > FREE)
+                const isUltra = typeof customerInfo.entitlements.active['StashFlix Ultra'] !== "undefined" || 
+                              typeof customerInfo.entitlements.active['ultra'] !== "undefined";
+                              
+                const isPro = typeof customerInfo.entitlements.active['StashFlix Pro'] !== "undefined" || 
+                              typeof customerInfo.entitlements.active['pro'] !== "undefined";
+                              
+                finalPlan = isUltra ? 'ULTRA' : isPro ? 'PRO' : 'FREE';
+                
+                // Se a nuvem estiver desatualizada em relação à loja, forçamos a sincronização imediata
+                if (finalPlan !== prefs.user_plan) {
+                  await SecureStore.setItemAsync('user_plan', finalPlan);
+                  const { syncSettingsToCloud } = await import('@/src/services/FirebaseDB');
+                  await syncSettingsToCloud();
+                }
+              }
+            } catch (rcError) {
+              console.warn("Erro ao validar assinatura real no RevenueCat:", rcError);
+            }
+
+            setUserPlanState(finalPlan);
           }
         } catch (e) {
           console.warn("Erro ao carregar dados do usuário no AppContext", e);

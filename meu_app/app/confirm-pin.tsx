@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import { useAppContext } from '@/src/contexts/AppContext';
 
 export default function ConfirmPinScreen() {
@@ -25,13 +25,14 @@ export default function ConfirmPinScreen() {
         import('@/src/services/FirebaseDB').then(({ syncSettingsToCloud }) => {
           syncSettingsToCloud().catch(() => {});
         }).catch(() => {});
-        // A flag has_onboarded será salva na próxima tela
+        // A flag has_onboarded será salva na próxima tela - ATUALIZADO: Salva aqui e finaliza
+        await SecureStore.setItemAsync('has_onboarded', 'true');
         
         Alert.alert(
-          'EVENTO DE CRIAÇÃO: PIN DE ACESSO PRINCIPAL',
-          'O seu código PIN de acesso principal foi registrado com sucesso no sistema local encriptado!',
+          'PIN CADASTRADO',
+          'Seu PIN foi registrado! IMPORTANTE: Caso você esqueça o PIN no futuro, poderá recuperá-lo clicando em "Esqueci o PIN" na tela de bloqueio e refazendo o login com a sua SENHA DA CONTA.',
           [
-            { text: 'PROSSEGUIR', onPress: () => router.push('/recovery-email') }
+            { text: 'ENTENDI', onPress: () => router.replace('/(drawer)') }
           ]
         );
       } else {

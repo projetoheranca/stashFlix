@@ -10,7 +10,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { activePalette: currentColors, colorSchemeMode, setColorSchemeMode } = useAppContext();
   const isDark = currentColors.background !== '#FFFFFF';
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,10 +20,16 @@ export default function LoginScreen() {
       Alert.alert("Erro", "Preencha todos os campos.");
       return;
     }
-    
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // 🔑 Baixa do Firebase todos os dados (user_pin, fake_pin, kamikaze_pin, configs)
+      // para que o SecureStore local esteja atualizado ANTES do LockScreen validar o PIN.
+      try {
+        const { loadSettingsFromCloud } = await import('@/src/services/FirebaseDB');
+        await loadSettingsFromCloud();
+      } catch {}
+      // O _layout.tsx detecta onAuthStateChanged e redireciona automaticamente
     } catch (error: any) {
       Alert.alert("Acesso Negado", error.message);
     } finally {
@@ -40,7 +46,7 @@ export default function LoginScreen() {
   const getThemeIcon = () => {
     if (colorSchemeMode === 'dark') return 'moon';
     if (colorSchemeMode === 'light') return 'sunny';
-    return 'phone-portrait-outline'; // System
+    return 'phone-portrait-outline';
   };
 
   return (
@@ -49,9 +55,9 @@ export default function LoginScreen() {
         <Ionicons name={getThemeIcon()} size={24} color={currentColors.text} />
       </TouchableOpacity>
 
-      <Image 
-        source={isDark ? require('@/assets/images/logo-dark.png') : require('@/assets/images/logo.png')} 
-        style={styles.logo} 
+      <Image
+        source={isDark ? require('@/assets/images/logo-dark.png') : require('@/assets/images/logo.png')}
+        style={styles.logo}
       />
       <Text style={styles.subtitle}>AUTENTICAÇÃO NECESSÁRIA</Text>
 
@@ -75,8 +81,8 @@ export default function LoginScreen() {
         />
       </View>
 
-      <TouchableOpacity 
-        style={styles.loginBtn} 
+      <TouchableOpacity
+        style={styles.loginBtn}
         onPress={handleLogin}
         disabled={loading}
         activeOpacity={0.8}
@@ -88,13 +94,13 @@ export default function LoginScreen() {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={styles.registerLink} 
+      <TouchableOpacity
+        style={styles.registerLink}
         onPress={() => router.push('/auth/register')}
         activeOpacity={0.6}
       >
         <Text style={[styles.registerText, { color: currentColors.textSecondary }]}>
-          Não possui credenciais? <Text style={{color: '#FF0033'}}>Registre-se</Text>
+          Não possui credenciais? <Text style={{ color: '#FF0033' }}>Registre-se</Text>
         </Text>
       </TouchableOpacity>
     </View>

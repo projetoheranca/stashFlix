@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, Modal } from 'react-native';
 import { useAppContext, CustomThemeColors } from '@/src/contexts/AppContext';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/src/services/SecureStoreManager';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 import { useRouter } from 'expo-router';
 
