@@ -8,6 +8,7 @@ import * as MediaLibrary from 'expo-media-library';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import * as StoreReview from 'expo-store-review';
 import { importToAlbum, getAlbumFiles } from '@/src/services/VaultService';
+import { showInterstitialAd } from '@/src/services/AdService';
 import * as Sharing from 'expo-sharing';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -582,7 +583,7 @@ export default function AlbumScreen() {
       loadFiles();
       setTimeout(() => { 
         setUploading(false); 
-        setUploadProgress(0); 
+        setUploadProgress(0); showInterstitialAd(); 
 
         // Perguntar sobre exclusão
         Alert.alert(
@@ -664,7 +665,7 @@ export default function AlbumScreen() {
         loadFiles();
         setTimeout(async () => { 
           setUploading(false); 
-          setUploadProgress(0); 
+          setUploadProgress(0); showInterstitialAd(); 
           
           // Disparar avaliação na loja (se for a primeira vez)
           const hasRated = await SecureStore.getItemAsync('has_rated_app');

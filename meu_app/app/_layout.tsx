@@ -13,6 +13,7 @@ import * as ScreenCapture from 'expo-screen-capture';
 import 'react-native-reanimated';
 import { triggerCustomAlert } from '@/src/services/CustomAlertService';
 import { CustomAlertModal } from '@/components/CustomAlertModal';
+import { initializeAds } from '@/src/services/AdService';
 
 // Patch global Alert.alert
 Alert.alert = (title, message, buttons) => {
@@ -66,6 +67,7 @@ export default function RootLayout() {
     const subscriber = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
       setAuthInitialized(true);
+      initializeAds(); // Preload AdMob instances
     });
     return subscriber; // unsubscribe on unmount
   }, []);

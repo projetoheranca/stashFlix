@@ -1,5 +1,6 @@
 import { InterstitialAd, RewardedAd, TestIds, AdEventType, RewardedAdEventType } from 'react-native-google-mobile-ads';
 import * as SecureStore from '@/src/services/SecureStoreManager';
+import { Alert } from 'react-native';
 
 // Use Test IDs in development to avoid getting banned by Google AdMob!
 // Replace these with your actual production Ad Unit IDs from the AdMob dashboard before publishing.
@@ -34,6 +35,9 @@ export const initializeAds = async () => {
   rewarded.load();
 };
 
+let lastInterstitialTime = 0;
+const INTERSTITIAL_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
+
 /**
  * Shows an Interstitial Ad (Full screen ad that can be closed).
  * Typically shown between screen transitions or after completing an action.
@@ -45,6 +49,13 @@ export const showInterstitialAd = async (onClose?: () => void) => {
     return;
   }
 
+  // Prevent spamming ads (cooldown limit)
+  const now = Date.now();
+  if (now - lastInterstitialTime < INTERSTITIAL_COOLDOWN_MS) {
+    if (onClose) onClose();
+    return;
+  }
+
   try {
     if (interstitial.loaded) {
       const unsubscribe = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
@@ -52,6 +63,7 @@ export const showInterstitialAd = async (onClose?: () => void) => {
         unsubscribe();
         if (onClose) onClose();
       });
+      lastInterstitialTime = Date.now();
       interstitial.show();
     } else {
       // If ad failed to load, proceed normally so we don't block the user
@@ -89,6 +101,7 @@ export const showRewardedAd = async (onReward: () => void, onClose?: () => void)
       rewarded.show();
     } else {
       rewarded.load();
+      Alert.alert("Aviso", "O anúncio ainda não carregou ou você está sem internet. Aguarde alguns segundos e tente novamente.");
       if (onClose) onClose();
     }
   } catch (error) {
