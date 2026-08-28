@@ -7,7 +7,7 @@
     "icon": "./assets/images/app-icon.jpg",
     "scheme": "ksafevault",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ksafe.vault",
