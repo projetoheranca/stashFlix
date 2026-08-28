@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '@/src/services/FirebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { triggerIntruderAlarm, stopIntruderAlarm } from '@/src/services/IntruderAlarm';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CALC_BTN = (SCREEN_W - 40) / 4; // 4 columns with 10px margin each side
@@ -34,6 +35,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
   const [lockStyle, setLockStyle] = useState<'geometric' | 'standard'>('geometric');
   const [isRecording, setIsRecording] = useState(false);
   const [cameraMode, setCameraMode] = useState<'picture' | 'video'>('picture');
+  const insets = useSafeAreaInsets();
 
   // Crash disguise states
   const [crashKeypadVisible, setCrashKeypadVisible] = useState(false);
@@ -389,7 +391,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
   };
 
   // ─── Recovery modal (shared) ──────────────────────────────────────────────
-  const RecoveryModal = () => (
+  const recoveryModalNode = (
     <Modal visible={showRecovery} transparent animationType="fade">
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -425,10 +427,10 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
     return (
       <>
         <Modal visible={visible} animationType="fade" transparent={false}>
-          <View style={styles.crashContainer}>
+          <View style={[styles.crashContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             {permission?.granted && (
-              <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
+              <View style={[StyleSheet.absoluteFill, { zIndex: -10, opacity: 0.01 }]} pointerEvents="none">
+                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={StyleSheet.absoluteFill} />
               </View>
             )}
             <View style={styles.crashDialog}>
@@ -455,7 +457,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
             </TouchableOpacity>
           </View>
         </Modal>
-        <RecoveryModal />
+        {recoveryModalNode}
       </>
     );
   }
@@ -477,10 +479,10 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
     return (
       <>
         <Modal visible={visible} animationType="fade" transparent={false}>
-          <View style={[styles.browserContainer, { backgroundColor: '#121212' }]}>
+          <View style={[styles.browserContainer, { backgroundColor: '#121212', paddingTop: Math.max(insets.top, 20) }]}>
             {permission?.granted && (
-              <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
+              <View style={[StyleSheet.absoluteFill, { zIndex: -10, opacity: 0.01 }]} pointerEvents="none">
+                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={StyleSheet.absoluteFill} />
               </View>
             )}
             <View style={styles.browserHeader}>
@@ -537,7 +539,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
             </View>
           </View>
         </Modal>
-        <RecoveryModal />
+        {recoveryModalNode}
       </>
     );
   }
@@ -574,8 +576,8 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
         <Modal visible={visible} animationType="fade" transparent={false}>
           <View style={{ flex: 1, backgroundColor: '#000' }}>
             {permission?.granted && (
-              <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
+              <View style={[StyleSheet.absoluteFill, { zIndex: -10, opacity: 0.01 }]} pointerEvents="none">
+                <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={StyleSheet.absoluteFill} />
               </View>
             )}
 
@@ -587,7 +589,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
             </View>
 
             {/* Keypad */}
-            <View style={styles.calcKeypad}>
+            <View style={[styles.calcKeypad, { paddingBottom: Math.max(insets.bottom, 20) }]}>
               {/* Rows 1-4 */}
               {topRows.map((row, ri) => (
                 <View key={ri} style={styles.calcRow}>
@@ -611,7 +613,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
             </View>
           </View>
         </Modal>
-        <RecoveryModal />
+        {recoveryModalNode}
       </>
     );
   }
@@ -622,7 +624,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
   return (
     <>
       <Modal visible={visible} animationType="fade" transparent={false}>
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 0), paddingTop: Math.max(insets.top, 40) }]}>
           {customBg && (
             <Animated.Image source={{ uri: customBg }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
           )}
@@ -630,8 +632,8 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
             <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
           )}
           {permission?.granted && (
-            <View style={{ position: 'absolute', width: 16, height: 16, top: 0, left: 0, overflow: 'hidden', opacity: 0.01 }}>
-              <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={{ width: 16, height: 16 }} />
+            <View style={[StyleSheet.absoluteFill, { zIndex: -10, opacity: 0.01 }]} pointerEvents="none">
+              <CameraView ref={cameraRef} facing="front" mode={cameraMode} style={StyleSheet.absoluteFill} />
             </View>
           )}
 
@@ -712,7 +714,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
           </TouchableOpacity>
         </View>
       </Modal>
-      <RecoveryModal />
+      {recoveryModalNode}
     </>
   );
 }

@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "StashFlix",
-    "slug": "stashflix7",
-    "version": "1.0.0",
+    "slug": "stashflix",
+    "version": "1.5.7",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.jpg",
     "scheme": "ksafevault",
@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "com.ksafe.vault",
-      "versionCode": 1,
+      "versionCode": 12,
       "permissions": [
         "android.permission.READ_MEDIA_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
@@ -39,12 +39,13 @@
       "favicon": "./assets/images/app-icon.jpg"
     },
     "plugins": [
+      "./plugins/withDynamicIcon",
       "expo-router",
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/logo.png",
-          "imageWidth": 200,
+          "imageWidth": 140,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
@@ -75,7 +76,14 @@
       ],
       "expo-build-properties",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2265796955368754~9253719192",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -84,9 +92,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "934b512e-b1b4-4fab-9a51-ef2aa811bf1c"
+        "projectId": "d1992b1a-2986-45ca-bf1f-527e0167454f"
       }
     },
-    "owner": "maykecorrea7s-organization"
+    "owner": "maykecorreas-organization"
   }
 }

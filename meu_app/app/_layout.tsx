@@ -125,7 +125,7 @@ export default function RootLayout() {
 
       // INICIALIZAÇÃO REVENUECAT (PAGAMENTOS IAP)
       try {
-        const rcApiKey = process.env.EXPO_PUBLIC_RC_API_KEY || 'test_YoCvUoOzlomcOLuoCPqTvMCQWbV'; 
+        const rcApiKey = process.env.EXPO_PUBLIC_RC_API_KEY || 'goog_WmOHDcosUFlhcsIYgPQtvMingtU'; 
         
         // Verifica se estamos no Expo Go. O RevenueCat precisa de código nativo para rodar.
         const isExpoGo = Constants.appOwnership === 'expo';
@@ -253,7 +253,7 @@ export default function RootLayout() {
           <Stack.Screen name="confirm-pin" />
           <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
           <Stack.Screen name="disguise" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="decoy" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="cloud-backup" options={{ presentation: 'modal' }} />
         </Stack>
         <StatusBar style="auto" />
         <LockScreen visible={isLocked && user !== null} onUnlocked={() => setIsLocked(false)} />

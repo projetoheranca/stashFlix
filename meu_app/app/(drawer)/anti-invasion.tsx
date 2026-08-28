@@ -14,6 +14,8 @@ import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Eas
 import { auth, rtdb } from '@/src/services/FirebaseConfig';
 import { ref, get } from 'firebase/database';
 import { triggerIntruderAlarm, stopIntruderAlarm } from '@/src/services/IntruderAlarm';
+import * as ScreenCapture from 'expo-screen-capture';
+import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 
 export default function AntiInvasionScreen() {
   const router = useRouter();
@@ -34,6 +36,11 @@ export default function AntiInvasionScreen() {
   const [spyMic, setSpyMic] = useState(false);
   const [alarmSiren, setAlarmSiren] = useState(false);
   const [alarmSirenSound, setAlarmSirenSound] = useState('digital_watch_alarm_long.ogg');
+  
+  const [breakInAlerts, setBreakInAlerts] = useState(true);
+  const [ghostMode, setGhostMode] = useState(false);
+  const [blockPrints, setBlockPrints] = useState(false);
+  const [deadManSwitch, setDeadManSwitch] = useState<string>('Desativado');
   
   // Kamikaze States
   const [kamikazePin, setKamikazePin] = useState<string | null>(null);
@@ -117,6 +124,19 @@ export default function AntiInvasionScreen() {
 
     const alarmSoundPref = await SecureStore.getItemAsync('alarm_siren_sound');
     if (alarmSoundPref) setAlarmSirenSound(alarmSoundPref);
+
+    const alertsPref = await SecureStore.getItemAsync('breakin_alerts');
+    if (alertsPref === 'false') setBreakInAlerts(false);
+
+    const ghostPref = await SecureStore.getItemAsync('ghost_mode_enabled');
+    if (ghostPref === 'true') setGhostMode(true);
+
+    const blockPrintsPref = await SecureStore.getItemAsync('block_prints_enabled');
+    if (blockPrintsPref === 'true') setBlockPrints(true);
+
+    const autoDestruct = await SecureStore.getItemAsync('auto_destruct_days');
+    if (autoDestruct) setDeadManSwitch(`${autoDestruct} Dias`);
+    else setDeadManSwitch('Desativado');
 
     const kamikazePref = await SecureStore.getItemAsync('kamikaze_pin');
     if (kamikazePref) setKamikazePin(kamikazePref);
@@ -225,6 +245,41 @@ export default function AntiInvasionScreen() {
       setIntruderVideoDuration('0');
       await SecureStore.setItemAsync('intruder_video_duration', '0');
     }
+    try { await syncSettingsToCloud(); } catch (e) {}
+  };
+
+  const handleToggleAlerts = async (value: boolean) => {
+    setBreakInAlerts(value);
+    await SecureStore.setItemAsync('breakin_alerts', value ? 'true' : 'false');
+    if (value) {
+      await SecureStore.setItemAsync('anti_invasion_activated_at', new Date().toISOString());
+      setIntruderVideoDuration('0');
+      await SecureStore.setItemAsync('intruder_video_duration', '0');
+    } else {
+      await SecureStore.deleteItemAsync('anti_invasion_activated_at');
+    }
+    try { await syncSettingsToCloud(); } catch (e) {}
+  };
+
+  const handleToggleGhostMode = async (value: boolean) => {
+    if (value && userPlan === 'FREE') return Alert.alert('Acesso Restrito', 'Recurso PRO.', [{ text: 'VER PLANOS', onPress: () => router.push('/paywall') }, { text: 'Cancelar' }]);
+    setGhostMode(value);
+    await SecureStore.setItemAsync('ghost_mode_enabled', value ? 'true' : 'false');
+    try {
+      await ScreenCapture.allowScreenCaptureAsync();
+      await syncSettingsToCloud();
+    } catch (e) {}
+  };
+
+  const handleToggleBlockPrints = async (value: boolean) => {
+    if (value && userPlan === 'FREE') return Alert.alert('Acesso Restrito', 'Recurso PRO.', [{ text: 'VER PLANOS', onPress: () => router.push('/paywall') }, { text: 'Cancelar' }]);
+    setBlockPrints(value);
+    await SecureStore.setItemAsync('block_prints_enabled', value ? 'true' : 'false');
+    try {
+      if (value) await ScreenCapture.preventScreenCaptureAsync();
+      else await ScreenCapture.allowScreenCaptureAsync();
+      await syncSettingsToCloud();
+    } catch (e) {}
   };
 
   const handleToggleAlarmSiren = async (value: boolean) => {
@@ -312,7 +367,7 @@ export default function AntiInvasionScreen() {
             <TouchableOpacity style={styles.optionLeft} onPress={handleChangeAlarmSound}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Aviso de Invasão</Text>
+                  <Text style={[styles.optionText, { color: theme.text }]}>Alarme Sonoro (Sirene)</Text>
                   <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
                 </View>
                 <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
@@ -325,6 +380,19 @@ export default function AntiInvasionScreen() {
               </View>
             </TouchableOpacity>
             <Switch value={alarmSiren} onValueChange={handleToggleAlarmSiren} trackColor={{ false: theme.surfaceHighlight, true: theme.error || '#FF0033' }} thumbColor={alarmSiren ? '#FFF' : '#888'} />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
+          {/* Alertas de Invasão */}
+          <View style={styles.optionRow}>
+            <View style={styles.optionLeft}>
+              <View style={styles.textWrapper}>
+                <Text style={[styles.optionText, { color: theme.text }]}>Captura de Intruso (Foto)</Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Tira uma foto em segredo de quem errar a senha</Text>
+              </View>
+            </View>
+            <Switch value={breakInAlerts} onValueChange={handleToggleAlerts} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={breakInAlerts ? '#FFF' : '#888'} />
           </View>
 
           <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
@@ -357,7 +425,7 @@ export default function AntiInvasionScreen() {
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Gravação em Vídeo</Text>
+                  <Text style={[styles.optionText, { color: theme.text }]}>Gravação de Intruso (Vídeo)</Text>
                   <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
                 </View>
                 <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
@@ -374,13 +442,45 @@ export default function AntiInvasionScreen() {
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Microfone Espião</Text>
+                  <Text style={[styles.optionText, { color: theme.text }]}>Gravação de Intruso (Áudio)</Text>
                   <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
                 </View>
-                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Grava 15s de áudio ambiente secretamente</Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Grava o áudio do ambiente secretamente ao errarem a senha</Text>
               </View>
             </View>
             <Switch value={spyMic} onValueChange={handleToggleSpyMic} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={spyMic ? '#FFF' : '#888'} />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
+          {/* Ghost Mode */}
+          <View style={styles.optionRow}>
+            <View style={styles.optionLeft}>
+              <View style={styles.textWrapper}>
+                <View style={styles.titleRow}>
+                  <Text style={[styles.optionText, { color: theme.text }]}>Modo Fantasma (Ocultar)</Text>
+                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                </View>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Oculta a prévia da tela do app nos aplicativos recentes</Text>
+              </View>
+            </View>
+            <Switch value={ghostMode} onValueChange={handleToggleGhostMode} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={ghostMode ? '#FFF' : '#888'} />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
+          {/* Proteção Anti-Print */}
+          <View style={styles.optionRow}>
+            <View style={styles.optionLeft}>
+              <View style={styles.textWrapper}>
+                <View style={styles.titleRow}>
+                  <Text style={[styles.optionText, { color: theme.text }]}>Bloqueio de Prints</Text>
+                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                </View>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Impede que tirem fotos ou gravem a tela do app (Android)</Text>
+              </View>
+            </View>
+            <Switch value={blockPrints} onValueChange={handleToggleBlockPrints} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={blockPrints ? '#FFF' : '#888'} />
           </View>
         </View>
 
@@ -397,6 +497,31 @@ export default function AntiInvasionScreen() {
             </Text>
             <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.8, marginTop: 4 }]}>
               {kamikazePin ? `Seu PIN letal está configurado.` : 'Apaga o cofre real se você for forçado a abri-lo.'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Tempo de Autodestruição */}
+        <TouchableOpacity 
+          style={[styles.kamikazeCard, { borderColor: theme.error || '#FF0033', marginTop: 10 }]}
+          onPress={() => {
+            if (userPlan !== 'ULTRA') return Alert.alert('Acesso Restrito', 'Recurso ULTRA.', [{ text: 'VER PLANOS', onPress: () => router.push('/paywall') }, { text: 'Cancelar' }]);
+            Alert.alert("Protocolo Dead Man's Switch", "Quantos dias de inatividade até o cofre se autodestruir?", [
+              { text: "Desativado", onPress: async () => { await SecureStore.deleteItemAsync('auto_destruct_days'); setDeadManSwitch('Desativado'); try { syncSettingsToCloud().catch(()=>{}); } catch(e){} } },
+              { text: "7 Dias", onPress: async () => { await SecureStore.setItemAsync('auto_destruct_days', '7'); setDeadManSwitch('7 Dias'); try { syncSettingsToCloud().catch(()=>{}); } catch(e){} } },
+              { text: "14 Dias", onPress: async () => { await SecureStore.setItemAsync('auto_destruct_days', '14'); setDeadManSwitch('14 Dias'); try { syncSettingsToCloud().catch(()=>{}); } catch(e){} } },
+              { text: "30 Dias", onPress: async () => { await SecureStore.setItemAsync('auto_destruct_days', '30'); setDeadManSwitch('30 Dias'); try { syncSettingsToCloud().catch(()=>{}); } catch(e){} } }
+            ]);
+          }}
+        >
+          <Ionicons name="timer-outline" size={24} color={deadManSwitch !== 'Desativado' ? (theme.error || '#FF0033') : theme.textSecondary} style={{ marginRight: 15 }} />
+          <View style={{ flex: 1 }}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.optionText, { color: deadManSwitch !== 'Desativado' ? (theme.error || '#FF0033') : theme.text }]}>Tempo de Autodestruição</Text>
+              <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
+            </View>
+            <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.8, marginTop: 4 }]}>
+              {deadManSwitch === 'Desativado' ? 'Apaga o cofre em caso de inatividade.' : `Autodestruição em ${deadManSwitch}`}
             </Text>
           </View>
         </TouchableOpacity>

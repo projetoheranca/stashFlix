@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { auth } from '@/src/services/FirebaseConfig';
@@ -21,6 +21,7 @@ export default function AccountScreen() {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [currentPinValue, setCurrentPinValue] = useState('');
   const [newPinValue, setNewPinValue] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
   
   // Auth for PIN Reset
   const [pinAuthPassword, setPinAuthPassword] = useState('');
@@ -46,9 +47,8 @@ export default function AccountScreen() {
   };
 
   const handleOpenPinModal = async () => {
-    const pin = await SecureStore.getItemAsync('user_pin') || '';
-    setCurrentPinValue(pin);
     setNewPinValue('');
+    setConfirmPinInput('');
     setPinAuthPassword('');
     setPinAuthenticated(false);
     setPinModalVisible(true);
@@ -59,8 +59,24 @@ export default function AccountScreen() {
       Alert.alert("Erro", "O PIN deve ter 4 dígitos.");
       return;
     }
+    if (newPinValue !== confirmPinInput) {
+      Alert.alert("Erro", "Os PINs não coincidem.");
+      return;
+    }
+    
+    const fakePin = await SecureStore.getItemAsync('fake_pin');
+    const kamikazePin = await SecureStore.getItemAsync('kamikaze_pin');
+    if (fakePin && newPinValue === fakePin) {
+      Alert.alert('Erro', 'O PIN não pode ser igual ao PIN de Fachada.');
+      return;
+    }
+    if (kamikazePin && newPinValue === kamikazePin) {
+      Alert.alert('Erro', 'O PIN não pode ser igual ao PIN de Emergência.');
+      return;
+    }
+    
     await SecureStore.setItemAsync('user_pin', newPinValue);
-    Alert.alert("Sucesso", "PIN alterado com sucesso!");
+    Alert.alert("Sucesso", "PIN redefinido com sucesso!");
     setPinModalVisible(false);
   };
 
@@ -337,15 +353,15 @@ export default function AccountScreen() {
       </TouchableOpacity>
     
       {/* PIN Edit Modal */}
-      <Modal visible={pinModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+      <Modal visible={pinModalVisible} transparent animationType="slide">
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[styles.modalContent, { backgroundColor: currentColors.surface, borderColor: currentColors.border }]}>
-            <Text style={[styles.modalTitle, { color: currentColors.text }]}>Redefinir PIN Principal</Text>
+            <Text style={[styles.modalTitle, { color: currentColors.text }]}>Redefinir PIN Esquecido</Text>
             
             {!pinAuthenticated ? (
               <>
-                <Text style={{ color: currentColors.textSecondary, marginBottom: 15, textAlign: 'center' }}>
-                  Por segurança, digite a senha da sua conta STASHFLIX ({auth.currentUser?.email}) para continuar.
+                <Text style={{ color: currentColors.textSecondary, marginBottom: 15 }}>
+                  Para redefinir o PIN, digite a senha da sua conta para confirmar sua identidade.
                 </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
@@ -367,7 +383,7 @@ export default function AccountScreen() {
             ) : (
               <>
                 <Text style={{ color: currentColors.textSecondary, marginBottom: 15 }}>
-                  PIN Atual: {currentPinValue || 'Nenhum'}
+                  Conta autenticada. Você pode criar um novo PIN Principal agora.
                 </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
@@ -379,18 +395,32 @@ export default function AccountScreen() {
                   value={newPinValue}
                   onChangeText={setNewPinValue}
                 />
+                <TextInput
+                  style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
+                  placeholder="Confirme o novo PIN"
+                  placeholderTextColor={currentColors.textSecondary}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  secureTextEntry
+                  value={confirmPinInput}
+                  onChangeText={setConfirmPinInput}
+                />
                 <View style={styles.modalButtons}>
                   <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
                     <Text style={[styles.modalBtnText, { color: currentColors.text }]}>Cancelar</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.tint }]} onPress={handleSavePin}>
-                    <Text style={styles.modalBtnText}>Salvar Novo PIN</Text>
+                  <TouchableOpacity 
+                    style={[styles.modalBtn, { backgroundColor: '#ef4444', opacity: (newPinValue.length===4 && confirmPinInput.length===4) ? 1 : 0.5 }]} 
+                    onPress={handleSavePin}
+                    disabled={newPinValue.length!==4 || confirmPinInput.length!==4}
+                  >
+                    <Text style={[styles.modalBtnText, { color: '#ffffff' }]}>Salvar Novo PIN</Text>
                   </TouchableOpacity>
                 </View>
               </>
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
     </ScrollView>

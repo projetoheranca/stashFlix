@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, Modal, Image } from 'react-native';
 import { useAppContext, CustomThemeColors } from '@/src/contexts/AppContext';
 import * as SecureStore from '@/src/services/SecureStoreManager';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
+import { showRewardedAd } from '@/src/services/AdService';
 import { useRouter } from 'expo-router';
-
-// Para ícones (apenas stub/mock para ambientes que suportam expo-system-ui ou bare native)
-// Em um app real de produção, precisaríamos do pacote expo-system-ui e configurar os ícones no app.json
+import { changeIcon, resetIcon } from 'react-native-change-icon';
 
 export default function AppearanceScreen() {
   const router = useRouter();
@@ -68,28 +67,63 @@ export default function AppearanceScreen() {
   };
 
   const handleIconChange = async (iconName: string) => {
-    if (iconName !== 'default' && userPlan === 'FREE') {
-      Alert.alert(
-        "Acesso Restrito 👑",
-        "Personalizar o ícone do aplicativo para disfarce é um recurso exclusivo do Plano PRO.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "VER PLANOS", onPress: () => router.push('/paywall') }
-        ]
-      );
-      return;
-    }
-    
-    setSelectedIcon(iconName);
-    await SecureStore.setItemAsync('app_icon_disguise', iconName);
     try {
-      await syncSettingsToCloud();
-    } catch (e) {}
-    
-    Alert.alert(
-      "Ícone Atualizado",
-      `O disfarce de ícone do aplicativo foi configurado para '${iconName.toUpperCase()}'.`
-    );
+      // Map our internal name to the activity-alias name registered in AndroidManifest
+      // (matches what we set in plugins/withDynamicIcon.js)
+      const aliasMap: Record<string, string> = {
+        'default':         'MainActivityIcon_default',
+        'calculator':      'MainActivityIcon_calculator',
+        'weather':         'MainActivityIcon_weather',
+        'browser_generic': 'MainActivityIcon_browser_generic',
+        'safari':          'MainActivityIcon_safari',
+        'browser_search':  'MainActivityIcon_browser_search',
+      };
+
+      const aliasName = aliasMap[iconName];
+      if (!aliasName) throw new Error('Unknown icon');
+
+      const applyIcon = async () => {
+        try {
+          if (iconName === 'default') {
+            await resetIcon();
+          } else {
+            await changeIcon(aliasName);
+          }
+          setSelectedIcon(iconName);
+          await SecureStore.setItemAsync('app_icon_disguise', iconName);
+          try { await syncSettingsToCloud(); } catch (e) {}
+          Alert.alert("Sucesso", "O ícone do app foi alterado (pode demorar alguns segundos na tela inicial).");
+        } catch (e) {
+          Alert.alert("Erro", "Não foi possível mudar o ícone do aplicativo.");
+        }
+      };
+
+      if (iconName !== 'default' && userPlan === 'FREE') {
+        Alert.alert(
+          "Recurso Premium",
+          "Esta é uma função PRO. Você pode se tornar assinante ou assistir a um vídeo rápido para usar agora!",
+          [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Assinar PRO", onPress: () => router.push('/paywall') },
+            { text: "Assistir Vídeo", onPress: () => {
+                showRewardedAd(async () => {
+                  await applyIcon();
+                }, () => {
+                  // Ad closed
+                });
+            }}
+          ]
+        );
+        return;
+      }
+
+      await applyIcon();
+    } catch (error: any) {
+      Alert.alert(
+        "Erro ao Trocar Ícone",
+        "Isso pode acontecer em modo de desenvolvimento. Teste na versão compilada do app (.apk)."
+      );
+    }
   };
 
 
@@ -204,44 +238,57 @@ export default function AppearanceScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>ÍCONE DO APLICATIVO</Text>
         <Text style={{ color: theme.textSecondary, marginBottom: 15, fontSize: 12, fontFamily: 'Inter_400Regular' }}>
-          Escolha um ícone para disfarçar o app na tela inicial. O ícone oficial (StashFlix) é gratuito, enquanto as camuflagens (incluindo navegadores) requerem o Plano PRO.
+          Escolha um ícone para disfarçar o app na tela inicial. StashFlix é gratuito. Os disfarces requerem o Plano PRO.
         </Text>
         <View style={styles.iconRow}>
           {[
-            { name: 'default', label: 'StashFlix', bg: '#FF0033', char: '🍿', isFree: true },
-            { name: 'calculator', label: 'Calculadora', bg: '#2B2B2B', char: '＋', isFree: false },
-            { name: 'weather', label: 'Clima', bg: '#00D8FF', char: '☀️', isFree: false },
-            { name: 'browser_generic', label: 'Navegador', bg: '#121212', char: '🌐', isFree: false },
-            { name: 'browser_safari', label: 'Bússola Web', bg: '#007AFF', char: '🧭', isFree: false },
-            { name: 'browser_search', label: 'Buscador', bg: '#8A2BE2', char: '🔍', isFree: false },
+            { name: 'default',         label: 'StashFlix',   src: require('@/assets/images/app-icon.jpg'),     isFree: true  },
+            { name: 'calculator',      label: 'Calculadora',  src: require('@/assets/images/calculadora.png'),  isFree: false },
+            { name: 'weather',         label: 'Clima',        src: require('@/assets/images/clima.png'),        isFree: false },
+            { name: 'browser_generic', label: 'Navegador',    src: require('@/assets/images/navegador.png'),    isFree: false },
+            { name: 'safari',          label: 'Safari',       src: require('@/assets/images/safari.png'),       isFree: false },
+            { name: 'browser_search',  label: 'Buscador',     src: require('@/assets/images/buscador.png'),     isFree: false },
           ].map((item) => {
             const isSelected = selectedIcon === item.name;
             return (
-              <TouchableOpacity 
-                key={item.name} 
-                style={styles.iconBox} 
+              <TouchableOpacity
+                key={item.name}
+                style={styles.iconBox}
                 onPress={() => handleIconChange(item.name)}
                 activeOpacity={0.8}
               >
                 <View style={[
-                  styles.fakeIcon, 
-                  { 
-                    backgroundColor: item.bg,
+                  styles.fakeIcon,
+                  {
                     borderColor: isSelected ? theme.tint : theme.border,
                     borderWidth: isSelected ? 3 : 1,
-                    position: 'relative'
+                    overflow: 'hidden',
+                    backgroundColor: '#000',
+                    shadowColor: isSelected ? theme.tint : 'transparent',
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: isSelected ? 6 : 0,
                   }
                 ]}>
-                  <Text style={{ fontSize: 28 }}>{item.char}</Text>
-                  
+                  <Image source={item.src} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="cover" />
+
                   {/* Premium badge */}
                   {!item.isFree && (
                     <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#000', borderRadius: 8, padding: 1, borderWidth: 0.5, borderColor: '#FFD700' }}>
                       <Text style={{ fontSize: 9 }}>👑</Text>
                     </View>
                   )}
+
+                  {/* Selected checkmark */}
+                  {isSelected && (
+                    <View style={{ position: 'absolute', bottom: 2, left: 0, right: 0, alignItems: 'center' }}>
+                      <View style={{ backgroundColor: theme.tint, borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1 }}>
+                        <Text style={{ fontSize: 7, color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}>ATIVO</Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
-                <Text style={{ color: theme.text, marginTop: 6, fontSize: 10, fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ color: isSelected ? theme.tint : theme.text, marginTop: 6, fontSize: 10, fontFamily: isSelected ? 'SpaceGrotesk_700Bold' : 'Inter_400Regular' }}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -249,6 +296,7 @@ export default function AppearanceScreen() {
           })}
         </View>
       </View>
+
 
       <Modal visible={pickerVisible} animationType="slide" transparent={true}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 }}>

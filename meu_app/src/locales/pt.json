@@ -1,0 +1,14 @@
+{
+  "welcome": "Bem-vindo ao StashFlix",
+  "lockscreen_pin": "Digite o PIN",
+  "lockscreen_error": "Erro do Sistema",
+  "paywall_title": "DESBLOQUEAR PRO",
+  "paywall_subtitle": "Obtenha recursos premium de disfarce e armazenamento em nuvem ilimitado.",
+  "btn_cancel": "Cancelar",
+  "btn_save": "Salvar",
+  "btn_delete": "Excluir",
+  "btn_confirm": "Confirmar",
+  "settings": "Configurações",
+  "camou": "Camuflagem",
+  "account": "Minha Conta"
+}

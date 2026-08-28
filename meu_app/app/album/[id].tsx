@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as MediaLibrary from 'expo-media-library';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import * as StoreReview from 'expo-store-review';
 import { importToAlbum, getAlbumFiles } from '@/src/services/VaultService';
 import * as Sharing from 'expo-sharing';
 import { Colors } from '@/constants/theme';
@@ -233,7 +234,7 @@ SecureThumbnail.displayName = 'SecureThumbnail';
 
 export default function AlbumScreen() {
   const { id, decoy } = useLocalSearchParams();
-  const albumName = id as string;
+  const albumName = decodeURIComponent(id as string);
   const isDecoy = decoy === 'true';
   const router = useRouter();
 
@@ -499,12 +500,24 @@ export default function AlbumScreen() {
 
   const handleShareFile = async () => {
     if (zoomImgUri) {
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(zoomImgUri);
-      } else {
-        Alert.alert("Erro", "Compartilhamento não disponível no dispositivo.");
-      }
+      Alert.alert(
+        "Compartilhar Arquivo",
+        "Atenção: Ao compartilhar, o arquivo será descriptografado temporariamente. Certifique-se de que está enviando para um local seguro.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Compartilhar",
+            onPress: async () => {
+              const isAvailable = await Sharing.isAvailableAsync();
+              if (isAvailable) {
+                await Sharing.shareAsync(zoomImgUri);
+              } else {
+                Alert.alert("Erro", "Compartilhamento não disponível.");
+              }
+            }
+          }
+        ]
+      );
     } else {
       Alert.alert("Aviso", "O arquivo ainda não foi carregado.");
     }
@@ -582,12 +595,30 @@ export default function AlbumScreen() {
               style: "destructive",
               onPress: async () => {
                 try {
-                  const assetIds = result.assets.map(a => a.assetId).filter(Boolean) as string[];
-                  if (assetIds.length > 0) {
-                    await MediaLibrary.deleteAssetsAsync(assetIds);
-                    Alert.alert("Sucesso", "Arquivos originais excluídos.");
+                  await MediaLibrary.requestPermissionsAsync(true);
+                  let deletedCount = 0;
+                  
+                  for (const asset of result.assets) {
+                    if (asset.assetId) {
+                      try {
+                        await MediaLibrary.deleteAssetsAsync([asset.assetId]);
+                        deletedCount++;
+                        continue;
+                      } catch (e) {}
+                    }
+                    
+                    if (asset.uri) {
+                      try {
+                        await FileSystem.deleteAsync(asset.uri, { idempotent: true });
+                        deletedCount++;
+                      } catch (e) {}
+                    }
+                  }
+                  
+                  if (deletedCount > 0) {
+                    Alert.alert("Sucesso", `${deletedCount} arquivo(s) original(is) excluído(s).`);
                   } else {
-                    Alert.alert("Aviso", "Não foi possível localizar os arquivos na galeria para exclusão automática. Você pode apagá-los manualmente.");
+                    Alert.alert("Aviso", "O sistema bloqueou a exclusão automática. Por favor, apague as mídias manualmente na Galeria.");
                   }
                 } catch (e) {
                   console.warn("Erro ao deletar arquivos originais:", e);
@@ -596,6 +627,18 @@ export default function AlbumScreen() {
             }
           ]
         );
+        
+        // Disparar avaliação na loja (se for a primeira vez)
+        setTimeout(async () => {
+          const hasRated = await SecureStore.getItemAsync('has_rated_app');
+          if (!hasRated) {
+            if (await StoreReview.hasAction()) {
+              StoreReview.requestReview();
+              await SecureStore.setItemAsync('has_rated_app', 'true');
+            }
+          }
+        }, 1500);
+
       }, 500);
     }
   };
@@ -615,11 +658,23 @@ export default function AlbumScreen() {
         const total = result.assets.length;
         for (let i = 0; i < total; i++) {
           setUploadProgress(Math.round((i / total) * 100));
-          await importToAlbum(result.assets[i].uri, albumName, isDecoy, result.assets[i].name || result.assets[i].fileName);
+          await importToAlbum(result.assets[i].uri, albumName, isDecoy, result.assets[i].name);
         }
         setUploadProgress(100);
         loadFiles();
-        setTimeout(() => { setUploading(false); setUploadProgress(0); }, 500);
+        setTimeout(async () => { 
+          setUploading(false); 
+          setUploadProgress(0); 
+          
+          // Disparar avaliação na loja (se for a primeira vez)
+          const hasRated = await SecureStore.getItemAsync('has_rated_app');
+          if (!hasRated) {
+            if (await StoreReview.hasAction()) {
+              StoreReview.requestReview();
+              await SecureStore.setItemAsync('has_rated_app', 'true');
+            }
+          }
+        }, 500);
       }
     } catch (e) {
       console.warn("Error picking document:", e);
@@ -686,14 +741,22 @@ export default function AlbumScreen() {
   }, [isDecoy, loadFiles]);
 
   const renderItem = useCallback(({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={styles.imageContainer}
-      onPress={() => handleFileClick(item)}
-      onLongPress={() => handleFileLongPress(item.id)}
-      activeOpacity={0.8}
-    >
-      <SecureThumbnail file={item} />
-    </TouchableOpacity>
+    <View style={styles.imageContainer}>
+      <TouchableOpacity 
+        style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}
+        onPress={() => handleFileClick(item)}
+        onLongPress={() => handleFileLongPress(item.id)}
+        activeOpacity={0.8}
+      >
+        <SecureThumbnail file={item} />
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.fileOptionsBtn}
+        onPress={() => handleFileLongPress(item.id)}
+      >
+        <Ionicons name="ellipsis-vertical" size={16} color="#FFF" />
+      </TouchableOpacity>
+    </View>
   ), [handleFileClick, handleFileLongPress]);
 
   if (isLocked) {
@@ -1021,8 +1084,20 @@ const styles = StyleSheet.create({
   backButton: { padding: 10 },
   title: { fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2 },
   list: { padding: 5 },
-  imageContainer: { flex: 1/3, aspectRatio: 1, padding: 2 },
-  image: { flex: 1, borderRadius: 4, borderWidth: 1, borderColor: '#1F1F1F' },
+  imageContainer: { flex: 1/3, aspectRatio: 1, padding: 4, position: 'relative' },
+  image: { width: '100%', height: '100%', borderRadius: 12 },
+  fileOptionsBtn: { 
+    position: 'absolute', 
+    top: 8, 
+    right: 8, 
+    backgroundColor: 'rgba(0,0,0,0.6)', 
+    borderRadius: 12, 
+    width: 24, 
+    height: 24, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    zIndex: 1
+  },
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 40 },
   fabContainer: { position: 'absolute', bottom: 40, right: 30 },
   fab: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.8, shadowOffset: { width: 0, height: 0 }, shadowRadius: 20, elevation: 10 },

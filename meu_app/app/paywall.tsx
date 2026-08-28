@@ -10,6 +10,7 @@ import { updatePlanInDatabase, startTrial } from '@/src/services/ApiService';
 import { useAppContext } from '@/src/contexts/AppContext';
 import Purchases from 'react-native-purchases';
 import Constants from 'expo-constants';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ export default function PaywallScreen() {
 
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedTier, setSelectedTier] = useState<'PRO' | 'ULTRA'>('PRO');
+  const [selectedPeriod, setSelectedPeriod] = useState<'MENSAL' | 'ANUAL'>('MENSAL');
 
   useEffect(() => {
     shimmerOffset.value = withRepeat(
@@ -97,7 +99,8 @@ export default function PaywallScreen() {
       }
 
       // Procura o pacote do RevenueCat correspondente (Exige que os pacotes tenham "pro" ou "ultra" no identifier)
-      const targetPkg = packages.find(p => p.identifier.toLowerCase().includes(selectedTier.toLowerCase())) || packages[0];
+      const expectedId = `${selectedTier.toLowerCase()}_${selectedPeriod.toLowerCase()}`;
+      const targetPkg = packages.find(p => p.identifier.toLowerCase() === expectedId) || packages.find(p => p.identifier.toLowerCase().includes(selectedTier.toLowerCase()));
       
       if (targetPkg) {
         const { customerInfo } = await Purchases.purchasePackage(targetPkg);
@@ -191,7 +194,7 @@ export default function PaywallScreen() {
       <View style={[styles.glowBackground, { backgroundColor: selectedTier === 'ULTRA' ? 'rgba(0, 255, 200, 0.15)' : 'rgba(255, 215, 0, 0.1)' }]} />
 
       <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-        <Text style={styles.closeText}>X</Text>
+        <Ionicons name="close" size={24} color="#FFF" />
       </TouchableOpacity>
 
       <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 40, width: '100%' }}>
@@ -237,15 +240,34 @@ export default function PaywallScreen() {
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.subscribeButton, { backgroundColor: selectedTier === 'ULTRA' ? '#00FFCC' : theme.tint, shadowColor: selectedTier === 'ULTRA' ? '#00FFCC' : theme.tint }]}
-        activeOpacity={0.8}
-        onPress={handleUpgrade}
-        disabled={loading}
-      >
-        <Animated.View style={[styles.shimmer, shimmerStyle]} />
-        <Text style={styles.buttonText}>ATIVAR PROTOCOLO {selectedTier}</Text>
-      </TouchableOpacity>
+      {/* Opções de Período */}
+      <View style={{ flexDirection: 'row', gap: 10, width: '100%', marginBottom: 20 }}>
+        <TouchableOpacity 
+          style={[styles.toggleBtn, { borderWidth: 1, borderColor: selectedPeriod === 'MENSAL' ? theme.tint : '#333', backgroundColor: selectedPeriod === 'MENSAL' ? 'rgba(255,255,255,0.1)' : 'transparent' }]}
+          onPress={() => setSelectedPeriod('MENSAL')}
+        >
+          <Text style={[styles.toggleText, { color: selectedPeriod === 'MENSAL' ? '#FFF' : '#888' }]}>MENSAL</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.toggleBtn, { borderWidth: 1, borderColor: selectedPeriod === 'ANUAL' ? theme.tint : '#333', backgroundColor: selectedPeriod === 'ANUAL' ? 'rgba(255,255,255,0.1)' : 'transparent' }]}
+          onPress={() => setSelectedPeriod('ANUAL')}
+        >
+          <Text style={[styles.toggleText, { color: selectedPeriod === 'ANUAL' ? '#FFF' : '#888' }]}>ANUAL</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ width: '100%', gap: 10 }}>
+        <TouchableOpacity 
+          style={[styles.subscribeButton, { backgroundColor: selectedTier === 'ULTRA' ? '#00FFCC' : theme.tint, shadowColor: selectedTier === 'ULTRA' ? '#00FFCC' : theme.tint }]}
+          activeOpacity={0.8}
+          onPress={handleUpgrade}
+          disabled={loading}
+        >
+          <Animated.View style={[styles.shimmer, shimmerStyle]} />
+          <Text style={styles.buttonText}>ASSINAR {selectedTier} ({selectedPeriod})</Text>
+        </TouchableOpacity>
+      </View>
       
       <TouchableOpacity onPress={handleStartTrial} disabled={loading} style={{ marginTop: 25 }}>
         <Text style={styles.footerText}>Iniciar Teste Gratuito de 7 Dias</Text>
@@ -270,8 +292,7 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', padding: 20 },
   glowBackground: { position: 'absolute', top: -200, width: 600, height: 600, borderRadius: 300, backgroundColor: 'rgba(255, 215, 0, 0.1)', opacity: 0.5 },
-  closeButton: { position: 'absolute', top: 50, right: 20, padding: 15 },
-  closeText: { color: '#666', fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold' },
+  closeButton: { position: 'absolute', top: 15, left: 15, padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, zIndex: 10 },
   title: { color: '#FFD700', fontSize: 24, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2, textAlign: 'center' },
   titleGlow: { position: 'absolute', color: '#FFD700', fontSize: 24, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2, textAlign: 'center', textShadowColor: 'rgba(255, 215, 0, 0.95)', textShadowRadius: 20, textShadowOffset: { width: 0, height: 0 } },
   

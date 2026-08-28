@@ -20,8 +20,8 @@ const DRAWER_GROUPS = [
     title: 'RECURSOS PREMIUM',
     items: [
       { name: 'Anti-Invasão', route: '/(drawer)/anti-invasion', icon: 'shield-half', level: 'ULTRA' },
-      { name: 'Backup & Nuvem', route: '/(drawer)/settings', icon: 'cloud-done', level: 'ULTRA' },
-      { name: 'Cofre Falso', route: '/decoy', icon: 'folder-open', level: 'PRO' },
+      { name: 'Backup & Nuvem', route: '/cloud-backup', icon: 'cloud-done', level: 'ULTRA' },
+      { name: 'Cofre Falso', route: '/(drawer)/decoy', icon: 'folder-open', level: 'PRO' },
       { name: 'Camuflagem', route: '/disguise', icon: 'calculator', level: 'PRO' },
       { name: 'Tela Premium', route: '/(drawer)/settings', icon: 'image', level: 'PRO' },
     ]
@@ -111,11 +111,6 @@ export function CustomDrawerContent(props: any) {
                         if (item.name === 'Tela Premium' || item.name === 'Senhas e PIN') {
                           props.navigation.closeDrawer();
                           router.push({ pathname: '/(drawer)/settings', params: { triggerBg: item.name === 'Tela Premium' ? 'true' : undefined, triggerPin: item.name === 'Senhas e PIN' ? 'true' : undefined } });
-                          return;
-                        }
-                        if (item.name === 'Backup & Nuvem') {
-                          props.navigation.closeDrawer();
-                          router.push({ pathname: '/(drawer)/settings', params: { triggerCloud: 'true' } });
                           return;
                         }
                         router.push(item.route as any);

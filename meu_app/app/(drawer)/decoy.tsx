@@ -204,21 +204,7 @@ export default function DecoyScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 60 }}>
-      <StatusBar style="light" />
-      <View style={styles.header}>
-        <Pressable 
-          onPress={() => router.back()} 
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && { opacity: 0.7 }
-          ]}
-        >
-          <Ionicons name="arrow-back" size={24} color={theme.tint} />
-        </Pressable>
-        <Text style={[styles.title, { color: theme.text }]}>COFRE FALSO (ISCA)</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 60, paddingTop: 20 }}>
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{"// 01. CONFIGURAÇÃO DO PIN FALSO"}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
@@ -393,9 +379,6 @@ export default function DecoyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20 },
-  backButton: { padding: 10, marginLeft: -10 },
-  title: { fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2 },
   sectionTitle: { paddingHorizontal: 20, marginBottom: 10, fontSize: 11, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
   card: { marginHorizontal: 20, borderRadius: 16, borderWidth: 1, padding: 20, overflow: 'hidden' },
   infoText: { fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 15, opacity: 0.8, lineHeight: 18 },

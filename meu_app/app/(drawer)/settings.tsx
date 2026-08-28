@@ -1,9 +1,14 @@
-import { View, Text, StyleSheet, Pressable, Alert, Switch, ScrollView, Modal, Image, ActivityIndicator, Dimensions, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Switch, ScrollView, Modal, Image, ActivityIndicator, Dimensions, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { t } from '../../src/i18n';
 import { registerDevice, deleteUserAccount } from '@/src/services/ApiService';
 import * as SecureStore from '@/src/services/SecureStoreManager';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { auth } from '@/src/services/FirebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as StoreReview from 'expo-store-review';
+
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useAppContext } from '@/src/contexts/AppContext';
@@ -11,9 +16,8 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 import { getCloudTelemetry } from '@/src/services/VaultService';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import { showInterstitialAd } from '@/src/services/AdService';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -22,18 +26,12 @@ export default function SettingsScreen() {
   const { userPlan, setUserPlan, activePalette: theme } = useAppContext();
   
   const [cloudSync, setCloudSync] = useState(false);
-  const [breakInAlerts, setBreakInAlerts] = useState(true);
-  const [ghostMode, setGhostMode] = useState(false);
-  const [spyMic, setSpyMic] = useState(false);
-  const [spyCam, setSpyCam] = useState(false);
   const [decoyCount, setDecoyCount] = useState(0);
   const [mainCount, setMainCount] = useState(0);
   const [trashCount, setTrashCount] = useState(0);
   const [cloudStats, setCloudStats] = useState({ main: { count: 0, bytes: 0 }, decoy: { count: 0, bytes: 0 }, trash: { count: 0, bytes: 0 }, intruders: { count: 0, bytes: 0 } });
   const [wifiOnly, setWifiOnly] = useState(true);
-  const [blockPrints, setBlockPrints] = useState(false);
-  const [intruderVideoDuration, setIntruderVideoDuration] = useState<'0' | '5' | '15' | '30'>('0');
-  const [deadManSwitch, setDeadManSwitch] = useState<string>('Desativado');
+  
   // Pin Management
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pinTypeToEdit, setPinTypeToEdit] = useState<'user_pin'|'fake_pin'|'kamikaze_pin'>('user_pin');
@@ -80,36 +78,11 @@ export default function SettingsScreen() {
     const fetchSettings = async () => {
       const user = await registerDevice();
       if (user) setUserPlan((user as any).plan || 'FREE');
-      const alertsPref = await SecureStore.getItemAsync('breakin_alerts');
-      if (alertsPref === 'false') setBreakInAlerts(false);
-
       const syncPref = await SecureStore.getItemAsync('cloud_sync_enabled');
       if (syncPref === 'true') setCloudSync(true);
-      
-      const ghostPref = await SecureStore.getItemAsync('ghost_mode_enabled');
-      if (ghostPref === 'true') setGhostMode(true);
-
-      const spyPref = await SecureStore.getItemAsync('spy_mic_enabled');
-      if (spyPref === 'true') setSpyMic(true);
-
-      const spyCamPref = await SecureStore.getItemAsync('spy_cam_enabled');
-      if (spyCamPref === 'true') setSpyCam(true);
 
       const wifiPref = await SecureStore.getItemAsync('wifi_only');
       if (wifiPref === 'false') setWifiOnly(false);
-
-      const blockPrintsPref = await SecureStore.getItemAsync('block_prints_enabled');
-      if (blockPrintsPref === 'true') setBlockPrints(true);
-
-      const videoPref = await SecureStore.getItemAsync('intruder_video_duration');
-      if (videoPref) setIntruderVideoDuration(videoPref as any);
-
-      const autoDestruct = await SecureStore.getItemAsync('auto_destruct_days');
-      if (autoDestruct) {
-        setDeadManSwitch(`${autoDestruct} Dias`);
-      } else {
-        setDeadManSwitch('Desativado');
-      }
 
       // Função utilitária para contar arquivos
       const countFilesInDir = async (dirPath: string) => {
@@ -149,137 +122,57 @@ export default function SettingsScreen() {
     fetchSettings();
   }, []);
 
-  const handleToggleAlerts = async (value: boolean) => {
-    setBreakInAlerts(value);
-    await SecureStore.setItemAsync('breakin_alerts', value ? 'true' : 'false');
-    if (value) {
-      await SecureStore.setItemAsync('anti_invasion_activated_at', new Date().toISOString());
-      // Se ligar a foto, desliga o vídeo
-      setIntruderVideoDuration('0');
-      await SecureStore.setItemAsync('intruder_video_duration', '0');
-    } else {
-      await SecureStore.deleteItemAsync('anti_invasion_activated_at');
-    }
-    try {
-      await syncSettingsToCloud();
-    } catch (e) {}
-  };
-
-
-  const handleOpenPinModal = (type: 'user_pin' | 'fake_pin' | 'kamikaze_pin') => {
-    setPinTypeToEdit(type);
-    setCurrentPinValue('');
-    setNewPinValue('');
-    setPinModalVisible(true);
-  };
-
   const handleSavePin = async () => {
-    if (!newPinValue || newPinValue.length < 4) {
-      Alert.alert('Erro', 'O novo PIN deve ter pelo menos 4 dgitos.');
+    if (newPinValue.length !== 4 || confirmPinInput.length !== 4) {
+      Alert.alert("Erro", "O novo PIN deve ter 4 dígitos.");
+      return;
+    }
+    if (newPinValue !== confirmPinInput) {
+      Alert.alert("Erro", "Os novos PINs não coincidem.");
       return;
     }
     const currentStored = await SecureStore.getItemAsync(pinTypeToEdit);
-    if (currentStored && currentStored !== currentPinValue) {
-      Alert.alert('Erro', 'O PIN atual est incorreto.');
+    if (currentStored && currentStored !== currentPinInput) {
+      Alert.alert('Erro', 'O PIN atual está incorreto.');
       return;
     }
+
+    const userPin = pinTypeToEdit === 'user_pin' ? newPinValue : await SecureStore.getItemAsync('user_pin');
+    const fakePin = pinTypeToEdit === 'fake_pin' ? newPinValue : await SecureStore.getItemAsync('fake_pin');
+    const kamikazePin = pinTypeToEdit === 'kamikaze_pin' ? newPinValue : await SecureStore.getItemAsync('kamikaze_pin');
+    
+    if (userPin && fakePin && userPin === fakePin) {
+      Alert.alert('Erro', 'O PIN de Fachada não pode ser igual ao PIN Principal.');
+      return;
+    }
+    if (userPin && kamikazePin && userPin === kamikazePin) {
+      Alert.alert('Erro', 'O PIN de Emergência não pode ser igual ao PIN Principal.');
+      return;
+    }
+    if (fakePin && kamikazePin && fakePin === kamikazePin) {
+      Alert.alert('Erro', 'O PIN de Emergência não pode ser igual ao PIN de Fachada.');
+      return;
+    }
+
     await SecureStore.setItemAsync(pinTypeToEdit, newPinValue);
-    Alert.alert('Sucesso', 'PIN atualizado com sucesso.');
-    setPinModalVisible(false);
-    setCurrentPinValue('');
+    Alert.alert("Sucesso", "PIN atualizado com sucesso.", [
+      { text: "OK", onPress: () => {
+          showInterstitialAd(() => {
+            setPinModalVisible(false);
+            setCurrentPinInput('');
+            setNewPinValue('');
+            setConfirmPinInput('');
+          });
+      }}
+    ]);
+  };
+
+  const handleOpenPinModal = async (type: 'user_pin' | 'fake_pin' | 'kamikaze_pin') => {
+    setPinTypeToEdit(type);
+    setCurrentPinInput('');
     setNewPinValue('');
-  };
-
-  const handleToggleGhostMode = async (value: boolean) => {
-    if (value && userPlan === 'FREE') {
-      Alert.alert(
-        'Acesso Restrito', 
-        'O Modo Fantasma (Ghost Mode) é um recurso exclusivo do Plano PRO.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
-        ]
-      );
-      return;
-    }
-    setGhostMode(value);
-    await SecureStore.setItemAsync('ghost_mode_enabled', value ? 'true' : 'false');
-    try {
-      // Proteção de print (ScreenCapture) desativada completamente a pedido do usuário
-      await ScreenCapture.allowScreenCaptureAsync();
-      await syncSettingsToCloud();
-    } catch (e) {
-      console.log('Erro ao alterar permissão de captura:', e);
-    }
-  };
-
-  const handleToggleBlockPrints = async (value: boolean) => {
-    if (value && userPlan === 'FREE') {
-      Alert.alert(
-        'Acesso Restrito', 
-        'A Proteção Anti-Print é um recurso exclusivo do Plano PRO.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
-        ]
-      );
-      return;
-    }
-    setBlockPrints(value);
-    await SecureStore.setItemAsync('block_prints_enabled', value ? 'true' : 'false');
-    try {
-      if (value) {
-        await ScreenCapture.preventScreenCaptureAsync();
-      } else {
-        await ScreenCapture.allowScreenCaptureAsync();
-      }
-      await syncSettingsToCloud();
-    } catch (e) {
-      console.log('Erro ao alterar permissão de captura:', e);
-    }
-  };
-
-  const handleToggleSpyMic = async (value: boolean) => {
-    if (value && userPlan === 'FREE') {
-      Alert.alert(
-        'Acesso Restrito', 
-        'O Microfone Espião é um recurso exclusivo do Plano PRO.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
-        ]
-      );
-      return;
-    }
-    setSpyMic(value);
-    await SecureStore.setItemAsync('spy_mic_enabled', value ? 'true' : 'false');
-    if (value) {
-      // Se ligar o microfone, desliga o vídeo
-      setIntruderVideoDuration('0');
-      await SecureStore.setItemAsync('intruder_video_duration', '0');
-    }
-    try {
-      await syncSettingsToCloud();
-    } catch (e) {}
-  };
-
-  const handleToggleSpyCam = async (value: boolean) => {
-    if (value && userPlan !== 'ULTRA') {
-      Alert.alert(
-        'Acesso Restrito', 
-        'A Câmera Espiã é um recurso exclusivo do Plano ULTRA.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
-        ]
-      );
-      return;
-    }
-    setSpyCam(value);
-    await SecureStore.setItemAsync('spy_cam_enabled', value ? 'true' : 'false');
-    try {
-      await syncSettingsToCloud();
-    } catch (e) {}
+    setConfirmPinInput('');
+    setPinModalVisible(true);
   };
 
   const handleToggleSync = async (value: boolean) => {
@@ -363,18 +256,15 @@ export default function SettingsScreen() {
     (global as any).ignoreNextBackground = true;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: false, // Disables native editor
-      quality: 0.9,
+      allowsEditing: true, // Usa o editor nativo super estável
+      aspect: [9, 16],
+      quality: 0.8,
     });
     setTimeout(() => { (global as any).ignoreNextBackground = false; }, 1000);
+    
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setSelectedImageUri(result.assets[0].uri);
-      setImageWidth(result.assets[0].width);
-      setImageHeight(result.assets[0].height);
-      setCropPreset('9:16');
-      setRotation(0);
-      setFlipX(false);
-      setCropModalVisible(true);
+      await SecureStore.setItemAsync('lock_bg_uri', result.assets[0].uri);
+      Alert.alert("Sucesso", "Plano de fundo premium atualizado!");
     }
   };
 
@@ -395,87 +285,6 @@ export default function SettingsScreen() {
     }
   }, [params.triggerPin]);
 
-  const handleConfirmCrop = async () => {
-    if (!selectedImageUri) return;
-    setCropLoading(true);
-    try {
-      const actions: ImageManipulator.Action[] = [];
-      if (rotation !== 0) {
-        actions.push({ rotate: rotation });
-      }
-      if (flipX) {
-        actions.push({ flip: ImageManipulator.FlipType.Horizontal });
-      }
-
-      let w = imageWidth || 1080;
-      let h = imageHeight || 1920;
-      if (rotation === 90 || rotation === 270) {
-        w = imageHeight || 1920;
-        h = imageWidth || 1080;
-      }
-
-      if (cropPreset === '9:16') {
-        const targetRatio = 9 / 16;
-        let cropW = w;
-        let cropH = h;
-        let originX = 0;
-        let originY = 0;
-
-        if (w / h > targetRatio) {
-          cropW = h * targetRatio;
-          originX = (w - cropW) / 2;
-        } else {
-          cropH = w / targetRatio;
-          originY = (h - cropH) / 2;
-        }
-        actions.push({
-          crop: {
-            originX: Math.round(originX),
-            originY: Math.round(originY),
-            width: Math.round(cropW),
-            height: Math.round(cropH),
-          }
-        });
-      } else if (cropPreset === '1:1') {
-        const cropSize = Math.min(w, h);
-        const originX = (w - cropSize) / 2;
-        const originY = (h - cropSize) / 2;
-        actions.push({
-          crop: {
-            originX: Math.round(originX),
-            originY: Math.round(originY),
-            width: Math.round(cropSize),
-            height: Math.round(cropSize),
-          }
-        });
-      }
-
-      let finalUri = selectedImageUri;
-      if (actions.length > 0) {
-        const manipResult = await ImageManipulator.manipulateAsync(
-          selectedImageUri,
-          actions,
-          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        finalUri = manipResult.uri;
-      }
-
-      await SecureStore.setItemAsync('lock_bg_uri', finalUri);
-      
-      // Envia as configurações para a nuvem em segundo plano sem bloquear a interface de usuário
-      syncSettingsToCloud().catch(err => {
-        console.warn("Erro ao sincronizar configurações no background:", err);
-      });
-
-      setCropModalVisible(false);
-      Alert.alert("Sucesso", "Fundo de tela personalizado aplicado com sucesso!");
-    } catch (error) {
-      console.warn("Erro ao cortar imagem:", error);
-      Alert.alert("Erro", "Não foi possível processar o corte da imagem.");
-    } finally {
-      setCropLoading(false);
-    }
-  };
 
   const maxCapacityBytes = userPlan === 'ULTRA' ? 100 * 1024 * 1024 * 1024 : (userPlan === 'PRO' ? 10 * 1024 * 1024 * 1024 : 1 * 1024 * 1024 * 1024);
   const totalCloudBytes = cloudStats.main.bytes + cloudStats.decoy.bytes + cloudStats.trash.bytes + cloudStats.intruders.bytes;
@@ -491,8 +300,10 @@ export default function SettingsScreen() {
   return (
     <ScrollView ref={scrollViewRef} style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 100 }}>
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>SISTEMA</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.textSecondary, opacity: 0.8 }]}>Painel de Controle e Segurança do StashFlix</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>{t('settings')}</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+          Gerencie preferências e segurança.
+        </Text>
       </View>
 
       {/* SEÇÃO 1: NUVEM E BACKUP */}
@@ -507,7 +318,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.optionText, { color: theme.text }]}>Sincronização Cloud</Text>
                 <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
               </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Backup criptografado para o Firebase</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Backup criptografado na Nuvem</Text>
             </View>
           </View>
           <Switch 
@@ -674,228 +485,8 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      {/* SEÇÃO 2: PRIVACIDADE E DISPOSITIVO */}
-      <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// 02. PRIVACIDADE & PROTOCOLOS"}</Text>
-      <View style={[styles.sectionCard, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
-        
-        {/* Alertas de Invasão */}
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Alertas de Invasão</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Capturar foto do intruso após PIN incorreto</Text>
-            </View>
-          </View>
-          <Switch 
-            value={breakInAlerts} 
-            onValueChange={handleToggleAlerts}
-            trackColor={{ false: theme.surfaceHighlight, true: theme.tint }}
-            thumbColor={breakInAlerts ? '#FFF' : '#888'}
-          />
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
-
-        {/* Gravação de Vídeo do Intruso */}
-        <Pressable 
-          style={({ pressed }) => [
-            styles.optionClickableRow,
-            { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
-          ]}
-          onPress={() => {
-            if (userPlan !== 'ULTRA') {
-              Alert.alert(
-                'Acesso Restrito', 
-                'Gravar vídeo do intruso é um recurso exclusivo do Plano ULTRA.',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
-                ]
-              );
-              return;
-            }
-            Alert.alert(
-              "Gravação de Intruso", 
-              "Quanto tempo a câmera deve gravar o invasor em vídeo oculto? (O PIN ficará bloqueado durante a gravação)",
-              [
-                { text: "Desativar Vídeo", onPress: async () => {
-                  setIntruderVideoDuration('0');
-                  await SecureStore.setItemAsync('intruder_video_duration', '0');
-                }},
-                { text: "5 Segundos", onPress: async () => {
-                  setIntruderVideoDuration('5');
-                  await SecureStore.setItemAsync('intruder_video_duration', '5');
-                  setBreakInAlerts(false);
-                  await SecureStore.setItemAsync('breakin_alerts', 'false');
-                  setSpyMic(false);
-                  await SecureStore.setItemAsync('spy_mic_enabled', 'false');
-                }},
-                { text: "15 Segundos", onPress: async () => {
-                  setIntruderVideoDuration('15');
-                  await SecureStore.setItemAsync('intruder_video_duration', '15');
-                  setBreakInAlerts(false);
-                  await SecureStore.setItemAsync('breakin_alerts', 'false');
-                  setSpyMic(false);
-                  await SecureStore.setItemAsync('spy_mic_enabled', 'false');
-                }},
-                { text: "30 Segundos", onPress: async () => {
-                  setIntruderVideoDuration('30');
-                  await SecureStore.setItemAsync('intruder_video_duration', '30');
-                  setBreakInAlerts(false);
-                  await SecureStore.setItemAsync('breakin_alerts', 'false');
-                  setSpyMic(false);
-                  await SecureStore.setItemAsync('spy_mic_enabled', 'false');
-                }}
-              ]
-            );
-          }}
-        >
-          <View style={styles.optionLeft}>
-            <View style={styles.textWrapper}>
-              <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Gravação de Intruso</Text>
-                <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
-              </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
-                {intruderVideoDuration === '0' ? 'Gravação desativada' : `Gravar vídeo oculto de ${intruderVideoDuration}s`}
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-
-        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
-
-        {/* Microfone Espião */}
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <View style={styles.textWrapper}>
-              <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Microfone Espião</Text>
-                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
-              </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Grava 15s de áudio ambiente secretamente</Text>
-            </View>
-          </View>
-          <Switch 
-            value={spyMic} 
-            onValueChange={handleToggleSpyMic}
-            trackColor={{ false: theme.surfaceHighlight, true: theme.tint }}
-            thumbColor={spyMic ? '#FFF' : '#888'}
-          />
-        </View>
-
-
-
-        {/* Ghost Mode */}
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <View style={styles.textWrapper}>
-              <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Ocultar dos Recentes</Text>
-                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
-              </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Oculta o app na tela de multitarefa (recentes)</Text>
-            </View>
-          </View>
-          <Switch 
-            value={ghostMode} 
-            onValueChange={handleToggleGhostMode}
-            trackColor={{ false: theme.surfaceHighlight, true: theme.tint }}
-            thumbColor={ghostMode ? '#FFF' : '#888'}
-          />
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
-
-        {/* Proteção Anti-Print */}
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <View style={styles.textWrapper}>
-              <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Proteção Anti-Print</Text>
-                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
-              </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Impede prints, capturas e gravações de tela</Text>
-            </View>
-          </View>
-          <Switch 
-            value={blockPrints} 
-            onValueChange={handleToggleBlockPrints}
-            trackColor={{ false: theme.surfaceHighlight, true: theme.tint }}
-            thumbColor={blockPrints ? '#FFF' : '#888'}
-          />
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
-
-        {/* Tempo de Autodestruição */}
-        <Pressable 
-          style={({ pressed }) => [
-            styles.optionClickableRow,
-            { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
-          ]}
-          onPress={() => {
-            if (userPlan !== 'ULTRA') {
-              Alert.alert(
-                'Acesso Restrito', 
-                'O Protocolo Dead Man\'s Switch é um recurso exclusivo do Plano ULTRA.',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'VER PLANOS', onPress: () => router.push('/paywall') }
-                ]
-              );
-              return;
-            }
-            Alert.alert(
-              "Protocolo Dead Man's Switch", 
-              "Quantos dias de inatividade até o cofre se autodestruir?",
-              [
-                { text: "Desativado", onPress: async () => {
-                  await SecureStore.deleteItemAsync('auto_destruct_days');
-                  setDeadManSwitch('Desativado');
-                  Alert.alert("Sucesso", "Protocolo Dead Man's Switch foi desativado.");
-                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
-                }},
-                { text: "7 Dias", onPress: async () => {
-                  await SecureStore.setItemAsync('auto_destruct_days', '7');
-                  setDeadManSwitch('7 Dias');
-                  Alert.alert("Sucesso", "Protocolo configurado. O cofre será destruído após 7 dias de inatividade.");
-                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
-                }},
-                { text: "14 Dias", onPress: async () => {
-                  await SecureStore.setItemAsync('auto_destruct_days', '14');
-                  setDeadManSwitch('14 Dias');
-                  Alert.alert("Sucesso", "Protocolo configurado. O cofre será destruído após 14 dias de inatividade.");
-                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
-                }},
-                { text: "30 Dias", onPress: async () => {
-                  await SecureStore.setItemAsync('auto_destruct_days', '30');
-                  setDeadManSwitch('30 Dias');
-                  Alert.alert("Sucesso", "Protocolo configurado. O cofre será destruído após 30 dias de inatividade.");
-                  try { syncSettingsToCloud().catch(() => {}); } catch (e) {}
-                }}
-              ]
-            );
-          }}
-        >
-          <View style={styles.optionLeft}>
-            <View style={styles.textWrapper}>
-              <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Tempo de Autodestruição</Text>
-                <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
-              </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
-                {deadManSwitch === 'Desativado' 
-                  ? 'Apaga o cofre em caso de inatividade prolongada' 
-                  : `Ativo: Autodestruição em ${deadManSwitch}`}
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-      </View>
-
-      {/* SEÇÃO 3: VISUAL E FACHADAS */}
-      <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// 03. VISUAL & CAMUFLAGEM"}</Text>
+      {/* SEÇÃO 2: VISUAL E FACHADAS */}
+      <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// 02. VISUAL & CAMUFLAGEM"}</Text>
       <View style={[styles.sectionCard, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
         
         {/* Fundo de Tela de Bloqueio */}
@@ -943,7 +534,7 @@ export default function SettingsScreen() {
             styles.optionClickableRow,
             { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
           ]} 
-          onPress={() => router.push('/decoy')}
+          onPress={() => router.push('/(drawer)/decoy')}
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
@@ -1017,9 +608,66 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
-      {/* SEÇÃO 4: CONTA */}
-      <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// 04. CONTA & SISTEMA"}</Text>
+      {/* SEÇÃO 3: CONTA */}
+      <Text style={[styles.sectionHeader, { color: theme.textSecondary }]}>{"// 03. CONTA & SISTEMA"}</Text>
       <View style={[styles.sectionCard, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
+
+        {/* Avalie o App */}
+        <Pressable 
+          style={({ pressed }) => [
+            styles.optionClickableRow,
+            { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
+          ]} 
+          onPress={async () => {
+            if (await StoreReview.hasAction()) {
+              StoreReview.requestReview();
+            } else {
+              Alert.alert('Avaliação', 'A avaliação na loja não está disponível neste dispositivo.');
+            }
+          }}
+        >
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: theme.text }]}>Avalie o StashFlix ⭐</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Sua opinião nos ajuda a melhorar</Text>
+            </View>
+          </View>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
+        {/* Manual de Segurança */}
+        <Pressable 
+          style={({ pressed }) => [
+            styles.optionClickableRow,
+            { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
+          ]} 
+          onPress={() => router.push('/(drawer)/security-tips')}
+        >
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: theme.text }]}>Manual de Segurança</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Dicas e boas práticas de privacidade</Text>
+            </View>
+          </View>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
+
+        {/* Suporte e Sugestões */}
+        <Pressable 
+          style={({ pressed }) => [
+            styles.optionClickableRow,
+            { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }
+          ]} 
+          onPress={() => Linking.openURL('mailto:suporte@stashflix.com?subject=Feedback%20sobre%20o%20StashFlix')}
+        >
+          <View style={styles.optionLeft}>
+            <View style={styles.textWrapper}>
+              <Text style={[styles.optionText, { color: theme.text }]}>Suporte e Sugestões</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Fale conosco ou reporte um problema</Text>
+            </View>
+          </View>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
 
         {/* Logout */}
         <Pressable 
@@ -1055,7 +703,7 @@ export default function SettingsScreen() {
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
               <Text style={[styles.optionText, { color: '#FF0033' }]}>Excluir Conta e Dados da Nuvem</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Apaga os dados no Firebase (Compliance)</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Apaga sua conta e todos os dados armazenados na Nuvem</Text>
             </View>
           </View>
         </Pressable>
@@ -1077,168 +725,29 @@ export default function SettingsScreen() {
         <Text style={styles.panicText}>MODO PÂNICO (APAGAR TUDO)</Text>
       </Pressable>
       
-      {/* MODAL DE CORTE FUTURISTA DE WALLPAPER */}
-      <Modal 
-        visible={cropModalVisible} 
-        animationType="slide" 
-        transparent={false}
-        onRequestClose={() => setCropModalVisible(false)}
-      >
-        <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
-          <Text style={[styles.modalTitle, { color: theme.tint, textShadowColor: theme.tint }]}>CROP WALLPAPER</Text>
-          <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>AJUSTE O SEU FUNDO PREMIUM COSMIC</Text>
 
-          {/* Area de Preview */}
-          <View style={[styles.cropPreviewContainer, { backgroundColor: theme.background, borderColor: theme.border + '50' }]}>
-            {selectedImageUri && (
-              <Image 
-                source={{ uri: selectedImageUri }} 
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  transform: [
-                    { rotate: `${rotation}deg` },
-                    { scaleX: flipX ? -1 : 1 },
-                  ],
-                }} 
-                resizeMode="contain"
-              />
-            )}
-            {/* Grid Overlay */}
-            <View style={[
-              styles.cropOverlay,
-              { borderColor: theme.tint, shadowColor: theme.tint },
-              cropPreset === '9:16' && styles.cropOverlay916,
-              cropPreset === '1:1' && styles.cropOverlay11,
-              cropPreset === 'original' && styles.cropOverlayOriginal
-            ]}>
-              <View style={styles.gridRow}>
-                <View style={styles.gridCell} />
-                <View style={styles.gridCell} />
-                <View style={styles.gridCell} />
-              </View>
-              <View style={styles.gridRow}>
-                <View style={styles.gridCell} />
-                <View style={styles.gridCell} />
-                <View style={styles.gridCell} />
-              </View>
-              <View style={styles.gridRow}>
-                <View style={styles.gridCell} />
-                <View style={styles.gridCell} />
-                <View style={styles.gridCell} />
-              </View>
-
-              {/* Glowing corners */}
-              <View style={[styles.corner, styles.cornerTL, { borderColor: theme.tint }]} />
-              <View style={[styles.corner, styles.cornerTR, { borderColor: theme.tint }]} />
-              <View style={[styles.corner, styles.cornerBL, { borderColor: theme.tint }]} />
-              <View style={[styles.corner, styles.cornerBR, { borderColor: theme.tint }]} />
-            </View>
-          </View>
-
-          {/* Preset Buttons */}
-          <View style={styles.presetGroup}>
-            <Pressable 
-              style={({ pressed }) => [
-                styles.presetButton, 
-                { borderColor: theme.border, backgroundColor: theme.surface },
-                cropPreset === '9:16' && [styles.activePresetButton, { borderColor: theme.tint, backgroundColor: theme.tint + '1A' }],
-                pressed && { transform: [{ scale: 0.95 }] }
-              ]}
-              onPress={() => setCropPreset('9:16')}
-            >
-              <Text style={[styles.presetText, { color: theme.textSecondary }, cropPreset === '9:16' && { color: theme.tint }]}>9:16 (MOBILE)</Text>
-            </Pressable>
-            <Pressable 
-              style={({ pressed }) => [
-                styles.presetButton, 
-                { borderColor: theme.border, backgroundColor: theme.surface },
-                cropPreset === '1:1' && [styles.activePresetButton, { borderColor: theme.tint, backgroundColor: theme.tint + '1A' }],
-                pressed && { transform: [{ scale: 0.95 }] }
-              ]}
-              onPress={() => setCropPreset('1:1')}
-            >
-              <Text style={[styles.presetText, { color: theme.textSecondary }, cropPreset === '1:1' && { color: theme.tint }]}>1:1 (SQUARE)</Text>
-            </Pressable>
-            <Pressable 
-              style={({ pressed }) => [
-                styles.presetButton, 
-                { borderColor: theme.border, backgroundColor: theme.surface },
-                cropPreset === 'original' && [styles.activePresetButton, { borderColor: theme.tint, backgroundColor: theme.tint + '1A' }],
-                pressed && { transform: [{ scale: 0.95 }] }
-              ]}
-              onPress={() => setCropPreset('original')}
-            >
-              <Text style={[styles.presetText, { color: theme.textSecondary }, cropPreset === 'original' && { color: theme.tint }]}>ORIGINAL</Text>
-            </Pressable>
-          </View>
-
-          {/* Action buttons (Rotate / Flip) */}
-          <View style={styles.actionGroup}>
-            <Pressable 
-              style={({ pressed }) => [
-                styles.actionButton,
-                { borderColor: theme.border, backgroundColor: theme.surface },
-                pressed && { transform: [{ scale: 0.95 }], backgroundColor: theme.surfaceHighlight }
-              ]}
-              onPress={() => setRotation(prev => (prev + 90) % 360)}
-            >
-              <Text style={[styles.actionButtonText, { color: theme.tint }]}>GIRAR 90°</Text>
-            </Pressable>
-            <Pressable 
-              style={({ pressed }) => [
-                styles.actionButton,
-                { borderColor: theme.border, backgroundColor: theme.surface },
-                pressed && { transform: [{ scale: 0.95 }], backgroundColor: theme.surfaceHighlight }
-              ]}
-              onPress={() => setFlipX(prev => !prev)}
-            >
-              <Text style={[styles.actionButtonText, { color: theme.tint }]}>ESPELHAR</Text>
-            </Pressable>
-          </View>
-
-          {/* Confirm & Cancel Buttons */}
-          {cropLoading ? (
-            <ActivityIndicator size="large" color={theme.tint} style={{ marginTop: 40 }} />
-          ) : (
-            <>
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.saveCropButton,
-                  { borderColor: theme.tint, backgroundColor: theme.tint + '22', shadowColor: theme.tint },
-                  pressed && { transform: [{ scale: 0.97 }], backgroundColor: theme.tint + '40' }
-                ]}
-                onPress={handleConfirmCrop}
-              >
-                <Text style={[styles.saveCropText, { color: theme.tint }]}>CORTAR E SALVAR</Text>
-              </Pressable>
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.cancelCropButton,
-                  pressed && { opacity: 0.6 }
-                ]}
-                onPress={() => setCropModalVisible(false)}
-              >
-                <Text style={styles.cancelCropText}>CANCELAR</Text>
-              </Pressable>
-            </>
-          )}
-        </View>
-      </Modal>
     
       {/* PIN Edit Modal */}
-      <Modal visible={pinModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+      <Modal visible={pinModalVisible} transparent animationType="slide">
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {pinTypeToEdit === 'user_pin' ? 'PIN Principal' : pinTypeToEdit === 'fake_pin' ? 'PIN de Fachada' : 'PIN Kamikaze'}
+              {pinTypeToEdit === 'user_pin' ? 'Alterar PIN Principal' : pinTypeToEdit === 'fake_pin' ? 'Alterar PIN de Fachada' : 'Alterar PIN Kamikaze'}
             </Text>
-            <Text style={{ color: theme.textSecondary, marginBottom: 15 }}>
-              PIN Atual (cadastrado na sua conta): {currentPinValue || 'Nenhum'}
-            </Text>
+            
             <TextInput
               style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
-              placeholder="Digite o novo PIN (4 dígitos)"
+              placeholder="Digite o PIN Atual"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              value={currentPinInput}
+              onChangeText={setCurrentPinInput}
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+              placeholder="Digite o Novo PIN (4 dígitos)"
               placeholderTextColor={theme.textSecondary}
               keyboardType="number-pad"
               maxLength={4}
@@ -1246,16 +755,30 @@ export default function SettingsScreen() {
               value={newPinValue}
               onChangeText={setNewPinValue}
             />
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+              placeholder="Confirme o Novo PIN"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              value={confirmPinInput}
+              onChangeText={setConfirmPinInput}
+            />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
                 <Text style={[styles.modalBtnText, { color: theme.text }]}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={handleSavePin}>
-                <Text style={styles.modalBtnText}>Salvar Novo PIN</Text>
+              <TouchableOpacity 
+                style={[styles.modalBtn, { backgroundColor: '#ef4444', opacity: (newPinValue.length===4 && confirmPinInput.length===4 && currentPinInput.length===4) ? 1 : 0.5 }]} 
+                onPress={handleSavePin}
+                disabled={newPinValue.length!==4 || confirmPinInput.length!==4 || currentPinInput.length!==4}
+              >
+                <Text style={[styles.modalBtnText, { color: '#ffffff' }]}>Salvar Novo PIN</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
     </ScrollView>
@@ -1267,6 +790,13 @@ const PREVIEW_SIZE = SCREEN_WIDTH * 0.8;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', padding: 24, borderRadius: 16, borderWidth: 1 },
+  modalTitle: { fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 15 },
+  input: { padding: 15, borderRadius: 8, borderWidth: 1, marginBottom: 20, fontFamily: 'SpaceGrotesk_400Regular' },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+  modalBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
+  modalBtnText: { fontFamily: 'SpaceGrotesk_700Bold' },
   header: { padding: 20, paddingTop: 60, paddingBottom: 10 },
   headerTitle: { fontSize: 24, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2, marginBottom: 4 },
   headerSubtitle: { fontSize: 13, fontFamily: 'Inter_400Regular', opacity: 0.8 },

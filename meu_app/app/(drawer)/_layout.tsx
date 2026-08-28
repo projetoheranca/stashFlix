@@ -69,6 +69,13 @@ export default function DrawerLayout() {
           drawerLabel: 'Conta',
         }}
       />
+      <Drawer.Screen
+        name="decoy"
+        options={{
+          title: 'COFRE FALSO',
+          drawerLabel: 'Cofre Falso',
+        }}
+      />
 
       <Drawer.Screen
         name="help"

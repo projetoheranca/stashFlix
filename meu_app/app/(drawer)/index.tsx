@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, TextInput, Alert, Modal, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList, TextInput, Alert, Modal, Platform, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getAlbums, createAlbum, importToAlbum } from '@/src/services/VaultService';
+import { auth } from '@/src/services/FirebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useAppContext } from '@/src/contexts/AppContext';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
@@ -15,7 +17,7 @@ export default function VaultScreen() {
   const { activePalette: theme, isFakeVault } = useAppContext();
   
   // Vault States
-  const [albums, setAlbums] = useState<{id: string; name: string; isLocked?: boolean; previewUri?: string}[]>([]);
+  const [albums, setAlbums] = useState<{id: string; name: string; isLocked?: boolean; previewUri?: string; previewIsProtected?: boolean}[]>([]);
   const [newAlbumName, setNewAlbumName] = useState('');
   
   const [uploading, setUploading] = useState(false);
@@ -24,6 +26,9 @@ export default function VaultScreen() {
   const [promptVisible, setPromptVisible] = useState(false);
   const [promptAlbum, setPromptAlbum] = useState('');
   const [promptText, setPromptText] = useState('');
+
+  // Create Folder Prompt States
+  const [createPromptVisible, setCreatePromptVisible] = useState(false);
 
   // Password Prompt States
   const [pinPromptVisible, setPinPromptVisible] = useState(false);
@@ -35,8 +40,13 @@ export default function VaultScreen() {
   const loadAlbums = async () => {
     const fetchedAlbums: any[] = await getAlbums(isFakeVault);
     for (let album of fetchedAlbums) {
-      const hasLock = await SecureStore.getItemAsync(`pwd_false_${sanitizeKey(album.name)}`);
+      const hasLock = await SecureStore.getItemAsync(`pwd_${isFakeVault}_${sanitizeKey(album.name)}`);
       album.isLocked = !!hasLock;
+      
+      if (album.previewFileName) {
+        const isFileProtected = await SecureStore.getItemAsync(`file_pwd_enabled_${album.previewFileName}`);
+        album.previewIsProtected = (isFileProtected === 'true');
+      }
     }
     setAlbums(fetchedAlbums);
   };
@@ -48,7 +58,12 @@ export default function VaultScreen() {
   );
 
   useEffect(() => {
-    loadAlbums();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loadAlbums();
+      }
+    });
+    return () => unsubscribe();
   }, [isFakeVault]);
 
 
@@ -61,6 +76,7 @@ export default function VaultScreen() {
       }
       await createAlbum(sanitizedName, isFakeVault);
       setNewAlbumName('');
+      setCreatePromptVisible(false);
       await loadAlbums();
     } catch (e: any) {
       Alert.alert("Erro ao criar diretório", e.message || String(e));
@@ -81,7 +97,7 @@ export default function VaultScreen() {
           text: isLocked ? "Remover Senha" : "Proteger com Senha", 
           onPress: async () => {
             if (isLocked) {
-              await SecureStore.deleteItemAsync(`pwd_false_${sanitizeKey(albumName)}`);
+              await SecureStore.deleteItemAsync(`pwd_${isFakeVault}_${sanitizeKey(albumName)}`);
               loadAlbums();
             } else {
               if (Platform.OS === 'ios') {
@@ -92,7 +108,7 @@ export default function VaultScreen() {
                     { text: "Cancelar", style: "cancel" },
                     { text: "Salvar", onPress: async (pin?: string) => {
                         if (pin && pin.trim() !== '') {
-                          await SecureStore.setItemAsync(`pwd_false_${sanitizeKey(albumName)}`, pin.trim());
+                          await SecureStore.setItemAsync(`pwd_${isFakeVault}_${sanitizeKey(albumName)}`, pin.trim());
                           loadAlbums();
                         }
                       }
@@ -171,33 +187,8 @@ export default function VaultScreen() {
 
       <View style={{ flex: 1 }}>
 
-              <View style={styles.createAlbumContainer}>
-                <TextInput 
-                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
-                  placeholder="NOVO DIRETÓRIO..."
-                  placeholderTextColor={theme.textSecondary + '80'}
-                  value={newAlbumName}
-                  onChangeText={setNewAlbumName}
-                />
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.createButtonContainer,
-                    pressed && { transform: [{ scale: 0.97 }] }
-                  ]}
-                  onPress={handleCreateAlbum}
-                >
-                  <LinearGradient
-                    colors={[theme.tint, theme.tint + 'AA']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.createButton}
-                  >
-                    <Text style={[styles.createButtonText, { color: '#FFF' }]}>CRIAR</Text>
-                  </LinearGradient>
-                </Pressable>
-              </View>
-              
               <FlatList 
+
                 data={albums}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
@@ -215,6 +206,10 @@ export default function VaultScreen() {
                       {item.isLocked ? (
                         <View style={[styles.iconBox, { backgroundColor: theme.surfaceHighlight }]}>
                           <Ionicons name="lock-closed-outline" size={24} color={theme.tint} />
+                        </View>
+                      ) : item.previewIsProtected ? (
+                        <View style={[styles.iconBox, { backgroundColor: '#100505', borderColor: '#FF0033', borderWidth: 1 }]}>
+                          <Ionicons name="lock-closed" size={24} color="#FF0033" />
                         </View>
                       ) : item.previewUri ? (
                         <View style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -235,17 +230,85 @@ export default function VaultScreen() {
                         {item.name}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} style={{ marginRight: 5, opacity: 0.8 }} />
+                    <TouchableOpacity 
+                      onPress={() => handleAlbumLongPress(item.name, item.isLocked || false)}
+                      style={{ padding: 8, marginLeft: 5 }}
+                    >
+                      <Ionicons name="ellipsis-vertical" size={20} color={theme.textSecondary} />
+                    </TouchableOpacity>
                   </Pressable>
                 )}
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
-                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}>Nenhum diretório seguro ainda.</Text>
+                    <Ionicons name="folder-open-outline" size={48} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 15 }} />
+                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center' }}>Nenhum diretório seguro ainda.</Text>
+                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 11, textAlign: 'center', opacity: 0.6, marginTop: 5 }}>Toque no + para criar sua primeira pasta</Text>
                   </View>
                 }
               />
 
       </View>
+      
+      {/* Botão Flutuante (FAB) para Criar Pasta */}
+      <View style={styles.fabContainer}>
+        <TouchableOpacity 
+          style={[styles.fab, { backgroundColor: theme.tint, shadowColor: theme.tint }]} 
+          onPress={() => {
+            if (Platform.OS === 'ios') {
+              Alert.prompt(
+                "Nova Pasta",
+                "Digite o nome do novo diretório:",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  { text: "Criar", onPress: async (name?: string) => {
+                      if (name && name.trim() !== '') {
+                        setNewAlbumName(name.trim());
+                        // Usa setTimeout para garantir que o estado atualize antes
+                        setTimeout(handleCreateAlbum, 100);
+                      }
+                    }
+                  }
+                ],
+                "plain-text"
+              );
+            } else {
+              setNewAlbumName('');
+              setCreatePromptVisible(true);
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={30} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal para Criar Álbum (Android) */}
+      <Modal visible={createPromptVisible} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '85%', backgroundColor: theme.surface, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
+            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}>Nova Pasta</Text>
+            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}>Digite o nome do novo diretório:</Text>
+            <TextInput
+              style={{ backgroundColor: theme.background, color: theme.text, padding: 15, borderRadius: 8, borderWidth: 1, borderColor: theme.border, marginBottom: 20, fontFamily: 'SpaceGrotesk_400Regular' }}
+              value={newAlbumName}
+              onChangeText={setNewAlbumName}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+              <Pressable onPress={() => setCreatePromptVisible(false)} style={{ padding: 12 }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}>Cancelar</Text>
+              </Pressable>
+              <Pressable 
+                onPress={handleCreateAlbum} 
+                style={{ backgroundColor: theme.tint, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}>Criar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Modal para Renomear Álbum (Android) */}
       <Modal visible={promptVisible} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }}>
@@ -300,7 +363,7 @@ export default function VaultScreen() {
               <Pressable 
                 onPress={async () => {
                   if (pinText && pinText.trim() !== '') {
-                    await SecureStore.setItemAsync(`pwd_false_${sanitizeKey(pinAlbum)}`, pinText.trim());
+                    await SecureStore.setItemAsync(`pwd_${isFakeVault}_${sanitizeKey(pinAlbum)}`, pinText.trim());
                     loadAlbums();
                   }
                   setPinPromptVisible(false);
@@ -356,7 +419,25 @@ const styles = StyleSheet.create({
   previewImage: { width: '100%', height: '100%' },
   albumInfo: { flex: 1, justifyContent: 'center' },
   albumName: { fontSize: 15, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 0.5 },
-  emptyState: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 40 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 60 },
+
+  // FAB Styles
+  fabContainer: {
+    position: 'absolute',
+    bottom: 30,
+    right: 25,
+    zIndex: 99,
+  },
+  fab: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
+  },
 
   // Cloud Files List
   cloudFileItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1, marginVertical: 4 },
