@@ -4,10 +4,10 @@
     "slug": "stashflix",
     "version": "1.5.7",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon.jpg",
+    "icon": "./assets/images/icon.png",
     "scheme": "ksafevault",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ksafe.vault",
@@ -29,14 +29,14 @@
       ],
       "adaptiveIcon": {
         "backgroundColor": "#050000",
-        "foregroundImage": "./assets/images/app-icon.jpg"
+        "foregroundImage": "./assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/app-icon.jpg"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "./plugins/withDynamicIcon",
