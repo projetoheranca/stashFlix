@@ -24,3 +24,6 @@ web-vault/dist/
 expo-env.d.ts
 # @end expo-cliandroid/
 ios/
+
+android/
+ios/
