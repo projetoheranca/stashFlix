@@ -1,4 +1,4 @@
-import { InterstitialAd, RewardedAd, TestIds, AdEventType, RewardedAdEventType } from 'react-native-google-mobile-ads';
+import { InterstitialAd, RewardedAd, TestIds, AdEventType, RewardedAdEventType, AdsConsent, AdsConsentStatus } from 'react-native-google-mobile-ads';
 import * as SecureStore from '@/src/services/SecureStoreManager';
 import { Alert } from 'react-native';
 
@@ -27,6 +27,21 @@ let rewarded = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID, {
 export const initializeAds = async () => {
   const userPlan = await SecureStore.getItemAsync('user_plan');
   if (userPlan === 'PRO') return; // Do not load ads for PRO users
+
+  try {
+    // 1. Request GDPR Consent info from Google
+    const consentInfo = await AdsConsent.requestInfoUpdate();
+    
+    // 2. If user is in Europe (REQUIRED) and form is available, show it
+    if (
+      consentInfo.isConsentFormAvailable &&
+      consentInfo.status === AdsConsentStatus.REQUIRED
+    ) {
+      await AdsConsent.showForm();
+    }
+  } catch (error) {
+    console.error("GDPR Consent error:", error);
+  }
 
   // Preload Interstitial
   interstitial.load();
