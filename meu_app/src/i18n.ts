@@ -5,12 +5,16 @@ import { I18n } from 'i18n-js';
 import en from './locales/en.json';
 import pt from './locales/pt.json';
 import es from './locales/es.json';
+import fr from './locales/fr.json';
+import de from './locales/de.json';
 
 // Define translations
 const translations = {
   en,
   pt,
   es,
+  fr,
+  de,
 };
 
 // Create i18n instance
