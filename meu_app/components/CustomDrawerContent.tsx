@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppContext } from '@/src/contexts/AppContext';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { t } from "@/src/i18n";
 
 const DRAWER_GROUPS = [
   {
@@ -71,8 +72,8 @@ export function CustomDrawerContent(props: any) {
     <DrawerContentScrollView {...props} style={{ backgroundColor: theme.background }} contentContainerStyle={{ flexGrow: 1, paddingTop: 20, paddingBottom: insets.bottom + 40 }}>
       
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.tint }]}>MENU</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>SISTEMA STASHFLIX</Text>
+        <Text style={[styles.headerTitle, { color: theme.tint }]}> {t('menu')} </Text>
+        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}> {t('sistema_stashflix')} </Text>
       </View>
 
       <View style={{ paddingHorizontal: 15 }}>
@@ -134,12 +135,12 @@ export function CustomDrawerContent(props: any) {
 
                       {isUltra && (
                         <View style={styles.badgeUltra}>
-                          <Text style={styles.badgeUltraText}>ULTRA</Text>
+                          <Text style={styles.badgeUltraText}> {t('ultra')} </Text>
                         </View>
                       )}
                       {isPro && (
                         <View style={styles.badgePro}>
-                          <Text style={styles.badgeProText}>PRO</Text>
+                          <Text style={styles.badgeProText}> {t('pro')} </Text>
                         </View>
                       )}
                     </TouchableOpacity>

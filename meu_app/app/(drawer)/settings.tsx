@@ -19,6 +19,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { showInterstitialAd } from '@/src/services/AdService';
 
+
 export default function SettingsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -302,8 +303,7 @@ export default function SettingsScreen() {
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.text }]}>{t('settings')}</Text>
         <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-          Gerencie preferências e segurança.
-        </Text>
+           {t('gerencie_preferncias_e_se')} </Text>
       </View>
 
       {/* SEÇÃO 1: NUVEM E BACKUP */}
@@ -315,10 +315,10 @@ export default function SettingsScreen() {
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
               <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Sincronização Cloud</Text>
-                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                <Text style={[styles.optionText, { color: theme.text }]}> {t('sincronizao_cloud')} </Text>
+                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
               </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Backup criptografado na Nuvem</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('backup_criptografado_na_n')} </Text>
             </View>
           </View>
           <Switch 
@@ -336,8 +336,8 @@ export default function SettingsScreen() {
             <View style={styles.optionRow}>
               <View style={styles.optionLeft}>
                 <View style={styles.textWrapper}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Somente via Wi-Fi</Text>
-                  <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Economize seus dados móveis</Text>
+                  <Text style={[styles.optionText, { color: theme.text }]}> {t('somente_via_wifi')} </Text>
+                  <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('economize_seus_dados_mvei')} </Text>
                 </View>
               </View>
               <Switch 
@@ -363,12 +363,11 @@ export default function SettingsScreen() {
           <View style={[styles.telemetryHeader, { borderBottomColor: theme.border + '33' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 10 }}>
               <Text style={[styles.telemetryTitle, { color: theme.text }]} numberOfLines={1}>
-                TELEMETRIA CLOUD
-              </Text>
+                 {t('telemetria_cloud')} </Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: 'rgba(0, 255, 102, 0.05)', borderColor: 'rgba(0, 255, 102, 0.2)' }]}>
               <Animated.View style={[styles.statusDot, pulseStyle]} />
-              <Text style={styles.statusText}>ONLINE</Text>
+              <Text style={styles.statusText}> {t('online')} </Text>
             </View>
           </View>
           {/* Progress Gauges Grid */}
@@ -379,7 +378,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.gaugeValue, { color: theme.tint }]}>
                   {totalPercent > 0 && totalPercent < 0.1 ? '< 0.1' : totalPercent.toFixed(1)}%
                 </Text>
-                <Text style={[styles.gaugeLabel, { color: theme.textSecondary, opacity: 0.6 }]}>OCUPADO</Text>
+                <Text style={[styles.gaugeLabel, { color: theme.textSecondary, opacity: 0.6 }]}> {t('ocupado')} </Text>
               </View>
             </View>
 
@@ -388,9 +387,9 @@ export default function SettingsScreen() {
               {/* Channel 1: Meu Cofre */}
               <View style={styles.channelRow}>
                 <View style={styles.channelInfo}>
-                  <Text style={[styles.channelName, { color: theme.text }]}>Meu Cofre</Text>
+                  <Text style={[styles.channelName, { color: theme.text }]}> {t('meu_cofre')} </Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {cloudStats.main.count} itens ({mainPercent.toFixed(1)}%)
+                    {cloudStats.main.count}  {t('itens')} {mainPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -406,9 +405,9 @@ export default function SettingsScreen() {
               {/* Channel 2: Cofre Falso */}
               <View style={styles.channelRow}>
                 <View style={styles.channelInfo}>
-                  <Text style={[styles.channelName, { color: theme.text }]}>Cofre Falso</Text>
+                  <Text style={[styles.channelName, { color: theme.text }]}> {t('cofre_falso')} </Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {cloudStats.decoy.count} itens ({decoyPercent.toFixed(1)}%)
+                    {cloudStats.decoy.count}  {t('itens')} {decoyPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -424,9 +423,9 @@ export default function SettingsScreen() {
               {/* Channel 3: Lixeira */}
               <View style={styles.channelRow}>
                 <View style={styles.channelInfo}>
-                  <Text style={[styles.channelName, { color: theme.text }]}>Lixeira</Text>
+                  <Text style={[styles.channelName, { color: theme.text }]}> {t('lixeira')} </Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {cloudStats.trash.count} itens ({trashPercent.toFixed(1)}%)
+                    {cloudStats.trash.count}  {t('itens')} {trashPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -442,9 +441,9 @@ export default function SettingsScreen() {
               {/* Channel 4: Evidências */}
               <View style={styles.channelRow}>
                 <View style={styles.channelInfo}>
-                  <Text style={[styles.channelName, { color: theme.text }]}>Evidências</Text>
+                  <Text style={[styles.channelName, { color: theme.text }]}> {t('evidncias')} </Text>
                   <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                    {cloudStats.intruders.count} itens ({intruderPercent.toFixed(1)}%)
+                    {cloudStats.intruders.count}  {t('itens')} {intruderPercent.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -462,24 +461,24 @@ export default function SettingsScreen() {
           {/* Data Telemetry Grid */}
           <View style={styles.statsGrid}>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>ALGORITMO</Text>
-              <Text style={[styles.gridValue, { color: theme.text }]}>AES-GCM-256</Text>
+              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('algoritmo')} </Text>
+              <Text style={[styles.gridValue, { color: theme.text }]}> {t('aesgcm256')} </Text>
             </View>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>ESPAÇO UTILIZADO</Text>
+              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('espao_utilizado')} </Text>
               <Text style={[styles.gridValue, { color: theme.text }]}>
                 {estimatedSizeMB > 1024 ? (estimatedSizeMB / 1024).toFixed(2) + ' GB' : estimatedSizeMB.toFixed(2) + ' MB'} / {userPlan === 'ULTRA' ? '100 GB' : (userPlan === 'PRO' ? '10 GB' : '1 GB')}
               </Text>
             </View>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>MODO ATUAL</Text>
+              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('modo_atual')} </Text>
               <Text style={[styles.gridValue, { color: theme.tint }]}>
                 {userPlan === 'ULTRA' ? 'ULTRA' : (userPlan === 'PRO' ? 'PRO VIP' : 'FREE USER')}
               </Text>
             </View>
             <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>NÚCLEO CLOUD</Text>
-              <Text style={[styles.gridValue, { color: theme.tint }]}>SERVERLESS ACTIVE</Text>
+              <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('ncleo_cloud')} </Text>
+              <Text style={[styles.gridValue, { color: theme.tint }]}> {t('serverless_active')} </Text>
             </View>
           </View>
         </View>
@@ -500,10 +499,10 @@ export default function SettingsScreen() {
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
               <View style={styles.titleRow}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Fundo de Tela de Bloqueio</Text>
-                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                <Text style={[styles.optionText, { color: theme.text }]}> {t('fundo_de_tela_de_bloqueio')} </Text>
+                <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
               </View>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Upload de imagem de bloqueio personalizada</Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('upload_de_imagem_de_bloqu')} </Text>
             </View>
           </View>
         </Pressable>
@@ -520,8 +519,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Camuflagem & Disfarce</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Disfarce de calculadora, navegador e faixadas</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('camuflagem__disfarce_1')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('disfarce_de_calculadora_n')} </Text>
             </View>
           </View>
         </Pressable>
@@ -538,8 +537,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Cofre Falso (Isca)</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Gerenciar PIN e pastas do cofre fachada</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('cofre_falso_isca')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('gerenciar_pin_e_pastas_do')} </Text>
             </View>
           </View>
         </Pressable>
@@ -568,8 +567,8 @@ export default function SettingsScreen() {
           >
             <View style={[styles.optionLeft, { justifyContent: 'center' }]}>
               <View style={[styles.textWrapper, { alignItems: 'center' }]}>
-                <Text style={[styles.optionText, { color: '#FFD700', fontSize: 18, marginBottom: 5 }]}>GERENCIAR ASSINATURA PRO</Text>
-                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.9, textAlign: 'center' }]}>Desbloqueie agora todos os benefícios VIP</Text>
+                <Text style={[styles.optionText, { color: '#FFD700', fontSize: 18, marginBottom: 5 }]}> {t('gerenciar_assinatura_pro')} </Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.9, textAlign: 'center' }]}> {t('desbloqueie_agora_todos_o')} </Text>
               </View>
             </View>
           </Pressable>
@@ -583,8 +582,8 @@ export default function SettingsScreen() {
         <Pressable style={({ pressed }) => [styles.optionClickableRow, { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }]} onPress={() => handleOpenPinModal('user_pin')}>
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Ver/Editar PIN Principal</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>O PIN principal da sua conta.</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('vereditar_pin_principal')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('o_pin_principal_da_sua_co')} </Text>
             </View>
           </View>
         </Pressable>
@@ -592,8 +591,8 @@ export default function SettingsScreen() {
         <Pressable style={({ pressed }) => [styles.optionClickableRow, { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }]} onPress={() => handleOpenPinModal('fake_pin')}>
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Ver/Editar PIN de Fachada</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>PIN para acessar o cofre falso.</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('vereditar_pin_de_fachada')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('pin_para_acessar_o_cofre_')} </Text>
             </View>
           </View>
         </Pressable>
@@ -601,8 +600,8 @@ export default function SettingsScreen() {
         <Pressable style={({ pressed }) => [styles.optionClickableRow, { backgroundColor: pressed ? theme.surfaceHighlight + '40' : 'transparent' }]} onPress={() => handleOpenPinModal('kamikaze_pin')}>
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Ver/Editar PIN Kamikaze</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>O PIN que apaga tudo se digitado.</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('vereditar_pin_kamikaze')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('o_pin_que_apaga_tudo_se_d')} </Text>
             </View>
           </View>
         </Pressable>
@@ -628,8 +627,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Avalie o StashFlix ⭐</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Sua opinião nos ajuda a melhorar</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('avalie_o_stashflix')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('sua_opinio_nos_ajuda_a_me')} </Text>
             </View>
           </View>
         </Pressable>
@@ -645,8 +644,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Manual de Segurança</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Dicas e boas práticas de privacidade</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('manual_de_segurana')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('dicas_e_boas_prticas_de_p')} </Text>
             </View>
           </View>
         </Pressable>
@@ -662,8 +661,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.text }]}>Suporte e Sugestões</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Fale conosco ou reporte um problema</Text>
+              <Text style={[styles.optionText, { color: theme.text }]}> {t('suporte_e_sugestes')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('fale_conosco_ou_reporte_u')} </Text>
             </View>
           </View>
         </Pressable>
@@ -685,8 +684,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: theme.textSecondary }]}>Logout</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Desconectar de {auth.currentUser?.email}</Text>
+              <Text style={[styles.optionText, { color: theme.textSecondary }]}> {t('logout')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('desconectar_de')} {auth.currentUser?.email}</Text>
             </View>
           </View>
         </Pressable>
@@ -702,8 +701,8 @@ export default function SettingsScreen() {
         >
           <View style={styles.optionLeft}>
             <View style={styles.textWrapper}>
-              <Text style={[styles.optionText, { color: '#FF0033' }]}>Excluir Conta e Dados da Nuvem</Text>
-              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Apaga sua conta e todos os dados armazenados na Nuvem</Text>
+              <Text style={[styles.optionText, { color: '#FF0033' }]}> {t('excluir_conta_e_dados_da_')} </Text>
+              <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('apaga_sua_conta_e_todos_o')} </Text>
             </View>
           </View>
         </Pressable>
@@ -722,7 +721,7 @@ export default function SettingsScreen() {
         ]} 
         onPress={handleReset}
       >
-        <Text style={styles.panicText}>MODO PÂNICO (APAGAR TUDO)</Text>
+        <Text style={styles.panicText}> {t('modo_pnico_apagar_tudo')} </Text>
       </Pressable>
       
 
@@ -767,14 +766,14 @@ export default function SettingsScreen() {
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
-                <Text style={[styles.modalBtnText, { color: theme.text }]}>Cancelar</Text>
+                <Text style={[styles.modalBtnText, { color: theme.text }]}> {t('cancelar')} </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalBtn, { backgroundColor: '#ef4444', opacity: (newPinValue.length===4 && confirmPinInput.length===4 && currentPinInput.length===4) ? 1 : 0.5 }]} 
                 onPress={handleSavePin}
                 disabled={newPinValue.length!==4 || confirmPinInput.length!==4 || currentPinInput.length!==4}
               >
-                <Text style={[styles.modalBtnText, { color: '#ffffff' }]}>Salvar Novo PIN</Text>
+                <Text style={[styles.modalBtnText, { color: '#ffffff' }]}> {t('salvar_novo_pin')} </Text>
               </TouchableOpacity>
             </View>
           </View>

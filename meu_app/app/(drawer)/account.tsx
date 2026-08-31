@@ -9,6 +9,7 @@ import { registerDevice } from '@/src/services/ApiService';
 import { useAppContext } from '@/src/contexts/AppContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { t } from "@/src/i18n";
 
 export default function AccountScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
@@ -197,8 +198,8 @@ export default function AccountScreen() {
     <ScrollView style={[styles.container, { backgroundColor: currentColors.background }]} contentContainerStyle={{ paddingBottom: 100 }}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: currentColors.text }]}>GERENCIAR CONTA</Text>
-        <Text style={[styles.subtitle, { color: currentColors.textSecondary }]}>Configurações de perfil e segurança</Text>
+        <Text style={[styles.title, { color: currentColors.text }]}> {t('gerenciar_conta')} </Text>
+        <Text style={[styles.subtitle, { color: currentColors.textSecondary }]}> {t('configuraes_de_perfil_e_s')} </Text>
       </View>
 
       {/* Info Card */}
@@ -222,7 +223,7 @@ export default function AccountScreen() {
         {/* Plan Details Section */}
         <View style={styles.divider} />
         <View style={styles.infoRow}>
-          <Text style={[styles.infoLabel, { color: currentColors.textSecondary }]}>Plano Atual</Text>
+          <Text style={[styles.infoLabel, { color: currentColors.textSecondary }]}> {t('plano_atual')} </Text>
           <Text style={[styles.infoValue, { color: currentColors.text }]}>
             {userPlan === 'PRO' ? 'Acesso Total Militar' : userPlan === 'TRIAL' ? 'Período de Experiência' : 'Gratuito (Limitado)'}
           </Text>
@@ -230,7 +231,7 @@ export default function AccountScreen() {
 
         {daysRemaining !== null && (
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: currentColors.textSecondary }]}>Tempo Restante</Text>
+            <Text style={[styles.infoLabel, { color: currentColors.textSecondary }]}> {t('tempo_restante')} </Text>
             <Text style={[styles.infoValue, { color: userPlan === 'PRO' ? '#FFD700' : '#FF9F0A', fontFamily: 'SpaceGrotesk_700Bold' }]}>
               {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'}
             </Text>
@@ -244,13 +245,13 @@ export default function AccountScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="sparkles" size={16} color="#000" style={{ marginRight: 6 }} />
-            <Text style={styles.upgradeButtonText}>FAZER UPGRADE PARA PRO</Text>
+            <Text style={styles.upgradeButtonText}> {t('fazer_upgrade_para_pro')} </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Security Actions Card */}
-      <Text style={styles.sectionHeader}>AÇÕES E SEGURANÇA</Text>
+      <Text style={styles.sectionHeader}> {t('aes_e_segurana')} </Text>
       <View style={[styles.card, { backgroundColor: currentColors.surface, borderColor: currentColors.border }]}>
         
         {/* Reset Password */}
@@ -259,10 +260,9 @@ export default function AccountScreen() {
             <Ionicons name="key-sharp" size={20} color={currentColors.tint} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.actionText, { color: currentColors.text }]}>Redefinir Senha</Text>
+            <Text style={[styles.actionText, { color: currentColors.text }]}> {t('redefinir_senha')} </Text>
             <Text style={{ color: currentColors.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Enviar e-mail para atualizar credenciais
-            </Text>
+               {t('enviar_email_para_atualiz')} </Text>
           </View>
           {resetLoading ? (
             <ActivityIndicator size="small" color={currentColors.tint} />
@@ -278,10 +278,9 @@ export default function AccountScreen() {
             <Ionicons name="keypad" size={20} color={currentColors.tint} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.actionText, { color: currentColors.text }]}>Redefinir PIN Principal</Text>
+            <Text style={[styles.actionText, { color: currentColors.text }]}> {t('redefinir_pin_principal')} </Text>
             <Text style={{ color: currentColors.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Alterar senha de acesso ao cofre
-            </Text>
+               {t('alterar_senha_de_acesso_a')} </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={currentColors.textSecondary} />
         </TouchableOpacity>
@@ -294,12 +293,11 @@ export default function AccountScreen() {
             <Ionicons name="shield-checkmark" size={20} color="#00FF66" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.actionText, { color: currentColors.text }]}>Criptografia On-Device</Text>
+            <Text style={[styles.actionText, { color: currentColors.text }]}> {t('criptografia_ondevice')} </Text>
             <Text style={{ color: currentColors.textSecondary, fontSize: 12, marginTop: 2 }}>
-              AES-256 bits ativo e protegendo
-            </Text>
+               {t('aes256_bits_ativo_e_prote')} </Text>
           </View>
-          <Text style={{ color: '#00FF66', fontSize: 12, fontFamily: 'SpaceGrotesk_700Bold' }}>ATIVO</Text>
+          <Text style={{ color: '#00FF66', fontSize: 12, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('ativo')} </Text>
         </View>
 
         <View style={styles.divider} />
@@ -310,7 +308,7 @@ export default function AccountScreen() {
             <Ionicons name="phone-portrait-outline" size={20} color={currentColors.text} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.actionText, { color: currentColors.text }]}>ID do Dispositivo</Text>
+            <Text style={[styles.actionText, { color: currentColors.text }]}> {t('id_do_dispositivo')} </Text>
             <Text style={{ color: currentColors.textSecondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
               {deviceDetails}
             </Text>
@@ -332,37 +330,35 @@ export default function AccountScreen() {
             <Ionicons name="log-out-outline" size={20} color={currentColors.tint} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.actionText, { color: currentColors.text }]}>Sair da Conta</Text>
+            <Text style={[styles.actionText, { color: currentColors.text }]}> {t('sair_da_conta')} </Text>
             <Text style={{ color: currentColors.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Encerrar sessão no dispositivo
-            </Text>
+               {t('encerrar_sesso_no_disposi')} </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={currentColors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       {/* Danger Zone */}
-      <Text style={[styles.sectionHeader, { color: '#FF0033' }]}>ZONA DE PERIGO</Text>
+      <Text style={[styles.sectionHeader, { color: '#FF0033' }]}> {t('zona_de_perigo')} </Text>
       <TouchableOpacity
         style={styles.nukeButton}
         onPress={handleNukeAccount}
         activeOpacity={0.8}
       >
         <Ionicons name="trash-bin-outline" size={20} color="#FF0033" style={{ marginRight: 10 }} />
-        <Text style={styles.nukeText}>APAGAR TUDO E EXCLUIR CONTA</Text>
+        <Text style={styles.nukeText}> {t('apagar_tudo_e_excluir_con')} </Text>
       </TouchableOpacity>
     
       {/* PIN Edit Modal */}
       <Modal visible={pinModalVisible} transparent animationType="slide">
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[styles.modalContent, { backgroundColor: currentColors.surface, borderColor: currentColors.border }]}>
-            <Text style={[styles.modalTitle, { color: currentColors.text }]}>Redefinir PIN Esquecido</Text>
+            <Text style={[styles.modalTitle, { color: currentColors.text }]}> {t('redefinir_pin_esquecido')} </Text>
             
             {!pinAuthenticated ? (
               <>
                 <Text style={{ color: currentColors.textSecondary, marginBottom: 15 }}>
-                  Para redefinir o PIN, digite a senha da sua conta para confirmar sua identidade.
-                </Text>
+                   {t('para_redefinir_o_pin_digi')} </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
                   placeholder="Senha da conta"
@@ -373,7 +369,7 @@ export default function AccountScreen() {
                 />
                 <View style={styles.modalButtons}>
                   <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
-                    <Text style={[styles.modalBtnText, { color: currentColors.text }]}>Cancelar</Text>
+                    <Text style={[styles.modalBtnText, { color: currentColors.text }]}> {t('cancelar')} </Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.tint }]} onPress={handleAuthenticateForPin}>
                     <Text style={styles.modalBtnText}>{pinAuthLoading ? 'Verificando...' : 'Autenticar'}</Text>
@@ -383,8 +379,7 @@ export default function AccountScreen() {
             ) : (
               <>
                 <Text style={{ color: currentColors.textSecondary, marginBottom: 15 }}>
-                  Conta autenticada. Você pode criar um novo PIN Principal agora.
-                </Text>
+                   {t('conta_autenticada_voc_pod')} </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: currentColors.background, color: currentColors.text, borderColor: currentColors.border }]}
                   placeholder="Digite o novo PIN (4 dígitos)"
@@ -407,14 +402,14 @@ export default function AccountScreen() {
                 />
                 <View style={styles.modalButtons}>
                   <TouchableOpacity style={[styles.modalBtn, { backgroundColor: currentColors.surfaceHighlight }]} onPress={() => setPinModalVisible(false)}>
-                    <Text style={[styles.modalBtnText, { color: currentColors.text }]}>Cancelar</Text>
+                    <Text style={[styles.modalBtnText, { color: currentColors.text }]}> {t('cancelar')} </Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.modalBtn, { backgroundColor: '#ef4444', opacity: (newPinValue.length===4 && confirmPinInput.length===4) ? 1 : 0.5 }]} 
                     onPress={handleSavePin}
                     disabled={newPinValue.length!==4 || confirmPinInput.length!==4}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#ffffff' }]}>Salvar Novo PIN</Text>
+                    <Text style={[styles.modalBtnText, { color: '#ffffff' }]}> {t('salvar_novo_pin')} </Text>
                   </TouchableOpacity>
                 </View>
               </>

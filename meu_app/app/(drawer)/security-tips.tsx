@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
+import { t } from "@/src/i18n";
 
 export default function SecurityTipsScreen() {
   const router = useRouter();
@@ -48,13 +49,12 @@ export default function SecurityTipsScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Manual de Segurança</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}> {t('manual_de_segurana')} </Text>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40 }}>
         <Text style={[styles.intro, { color: theme.textSecondary }]}>
-          A privacidade é o seu maior ativo. Siga estas diretrizes para garantir que o StashFlix mantenha seus dados invisíveis para o sistema e 100% seguros.
-        </Text>
+           {t('a_privacidade__o_seu_maio')} </Text>
 
         <View style={styles.tipsList}>
           {TIPS.map((tip, index) => (
@@ -73,8 +73,7 @@ export default function SecurityTipsScreen() {
         <View style={[styles.warningBox, { borderColor: '#FF0033', backgroundColor: 'rgba(255,0,51,0.05)' }]}>
           <Ionicons name="information-circle" size={24} color="#FF0033" />
           <Text style={styles.warningText}>
-            Lembre-se: O aplicativo é projetado para proteger você. Nunca compartilhe sua senha mestra com ninguém.
-          </Text>
+             {t('lembrese_o_aplicativo__pr')} </Text>
         </View>
       </ScrollView>
     </View>

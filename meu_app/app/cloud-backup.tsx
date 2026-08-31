@@ -9,6 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from "@/src/i18n";
 
 export default function CloudBackupScreen() {
   const router = useRouter();
@@ -123,8 +124,8 @@ export default function CloudBackupScreen() {
         <View style={styles.headerLeft}>
           <Ionicons name="cloud-done" size={32} color={theme.tint} />
           <View style={{ marginLeft: 15 }}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>BACKUP & NUVEM</Text>
-            <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Sincronização e Telemetria</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}> {t('backup__nuvem')} </Text>
+            <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}> {t('sincronizao_e_telemetria')} </Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
@@ -143,10 +144,10 @@ export default function CloudBackupScreen() {
                 <View style={styles.optionLeft}>
                   <View style={styles.textWrapper}>
                     <View style={styles.titleRow}>
-                      <Text style={[styles.optionText, { color: theme.text }]}>Sincronização Cloud</Text>
-                      <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                      <Text style={[styles.optionText, { color: theme.text }]}> {t('sincronizao_cloud')} </Text>
+                      <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
                     </View>
-                    <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Backup criptografado na Nuvem</Text>
+                    <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('backup_criptografado_na_n')} </Text>
                   </View>
                 </View>
                 <Switch 
@@ -164,8 +165,8 @@ export default function CloudBackupScreen() {
                   <View style={styles.optionRow}>
                     <View style={styles.optionLeft}>
                       <View style={styles.textWrapper}>
-                        <Text style={[styles.optionText, { color: theme.text }]}>Somente via Wi-Fi</Text>
-                        <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Economize seus dados móveis</Text>
+                        <Text style={[styles.optionText, { color: theme.text }]}> {t('somente_via_wifi')} </Text>
+                        <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('economize_seus_dados_mvei')} </Text>
                       </View>
                     </View>
                     <Switch 
@@ -191,12 +192,11 @@ export default function CloudBackupScreen() {
                 <View style={[styles.telemetryHeader, { borderBottomColor: theme.border + '33' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 10 }}>
                     <Text style={[styles.telemetryTitle, { color: theme.text }]} numberOfLines={1}>
-                      TELEMETRIA CLOUD
-                    </Text>
+                       {t('telemetria_cloud')} </Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: 'rgba(0, 255, 102, 0.05)', borderColor: 'rgba(0, 255, 102, 0.2)' }]}>
                     <Animated.View style={[styles.statusDot, pulseStyle]} />
-                    <Text style={styles.statusText}>ONLINE</Text>
+                    <Text style={styles.statusText}> {t('online')} </Text>
                   </View>
                 </View>
                 
@@ -208,7 +208,7 @@ export default function CloudBackupScreen() {
                       <Text style={[styles.gaugeValue, { color: theme.tint }]}>
                         {totalPercent > 0 && totalPercent < 0.1 ? '< 0.1' : totalPercent.toFixed(1)}%
                       </Text>
-                      <Text style={[styles.gaugeLabel, { color: theme.textSecondary, opacity: 0.6 }]}>OCUPADO</Text>
+                      <Text style={[styles.gaugeLabel, { color: theme.textSecondary, opacity: 0.6 }]}> {t('ocupado')} </Text>
                     </View>
                   </View>
 
@@ -217,9 +217,9 @@ export default function CloudBackupScreen() {
                     {/* Channel 1: Meu Cofre */}
                     <View style={styles.channelRow}>
                       <View style={styles.channelInfo}>
-                        <Text style={[styles.channelName, { color: theme.text }]}>Meu Cofre</Text>
+                        <Text style={[styles.channelName, { color: theme.text }]}> {t('meu_cofre')} </Text>
                         <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                          {cloudStats.main.count} itens ({mainPercent.toFixed(1)}%)
+                          {cloudStats.main.count}  {t('itens')} {mainPercent.toFixed(1)}%)
                         </Text>
                       </View>
                       <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -235,9 +235,9 @@ export default function CloudBackupScreen() {
                     {/* Channel 2: Cofre Falso */}
                     <View style={styles.channelRow}>
                       <View style={styles.channelInfo}>
-                        <Text style={[styles.channelName, { color: theme.text }]}>Cofre Falso</Text>
+                        <Text style={[styles.channelName, { color: theme.text }]}> {t('cofre_falso')} </Text>
                         <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                          {cloudStats.decoy.count} itens ({decoyPercent.toFixed(1)}%)
+                          {cloudStats.decoy.count}  {t('itens')} {decoyPercent.toFixed(1)}%)
                         </Text>
                       </View>
                       <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -253,9 +253,9 @@ export default function CloudBackupScreen() {
                     {/* Channel 3: Lixeira */}
                     <View style={styles.channelRow}>
                       <View style={styles.channelInfo}>
-                        <Text style={[styles.channelName, { color: theme.text }]}>Lixeira</Text>
+                        <Text style={[styles.channelName, { color: theme.text }]}> {t('lixeira')} </Text>
                         <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                          {cloudStats.trash.count} itens ({trashPercent.toFixed(1)}%)
+                          {cloudStats.trash.count}  {t('itens')} {trashPercent.toFixed(1)}%)
                         </Text>
                       </View>
                       <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -271,9 +271,9 @@ export default function CloudBackupScreen() {
                     {/* Channel 4: Evidências */}
                     <View style={styles.channelRow}>
                       <View style={styles.channelInfo}>
-                        <Text style={[styles.channelName, { color: theme.text }]}>Evidências</Text>
+                        <Text style={[styles.channelName, { color: theme.text }]}> {t('evidncias')} </Text>
                         <Text style={[styles.channelVal, { color: theme.textSecondary, opacity: 0.8 }]}>
-                          {cloudStats.intruders.count} itens ({intruderPercent.toFixed(1)}%)
+                          {cloudStats.intruders.count}  {t('itens')} {intruderPercent.toFixed(1)}%)
                         </Text>
                       </View>
                       <View style={[styles.trackContainer, { backgroundColor: theme.surfaceHighlight + '40' }]}>
@@ -291,24 +291,24 @@ export default function CloudBackupScreen() {
                 {/* Data Telemetry Grid */}
                 <View style={styles.statsGrid}>
                   <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>ALGORITMO</Text>
-                    <Text style={[styles.gridValue, { color: theme.text }]}>AES-GCM-256</Text>
+                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('algoritmo')} </Text>
+                    <Text style={[styles.gridValue, { color: theme.text }]}> {t('aesgcm256')} </Text>
                   </View>
                   <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>ESPAÇO UTILIZADO</Text>
+                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('espao_utilizado')} </Text>
                     <Text style={[styles.gridValue, { color: theme.text }]}>
                       {estimatedSizeMB > 1024 ? (estimatedSizeMB / 1024).toFixed(2) + ' GB' : estimatedSizeMB.toFixed(2) + ' MB'} / {userPlan === 'ULTRA' ? '100 GB' : (userPlan === 'PRO' ? '10 GB' : '1 GB')}
                     </Text>
                   </View>
                   <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>MODO ATUAL</Text>
+                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('modo_atual')} </Text>
                     <Text style={[styles.gridValue, { color: theme.tint }]}>
                       {userPlan === 'ULTRA' ? 'ULTRA' : (userPlan === 'PRO' ? 'PRO VIP' : 'FREE USER')}
                     </Text>
                   </View>
                   <View style={[styles.telemetryGridCell, { backgroundColor: theme.surfaceHighlight + '20', borderColor: theme.border + '33' }]}>
-                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}>NÚCLEO CLOUD</Text>
-                    <Text style={[styles.gridValue, { color: theme.tint }]}>SERVERLESS ACTIVE</Text>
+                    <Text style={[styles.gridLabel, { color: theme.textSecondary, opacity: 0.5 }]}> {t('ncleo_cloud')} </Text>
+                    <Text style={[styles.gridValue, { color: theme.tint }]}> {t('serverless_active')} </Text>
                   </View>
                 </View>
               </View>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { useFocusEffect } from 'expo-router';
 import { getTrashFiles, restoreFromTrash, emptyTrash } from '@/src/services/VaultService';
 import { useAppContext } from '@/src/contexts/AppContext';
+import { t } from "@/src/i18n";
 
 export default function TrashScreen() {
   const { activePalette: theme, isFakeVault } = useAppContext();
@@ -45,10 +46,9 @@ export default function TrashScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>LIXEIRA</Text>
+        <Text style={[styles.title, { color: theme.text }]}> {t('lixeira_1')} </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          {trashFiles.length} itens ocupando espaço
-        </Text>
+          {trashFiles.length}  {t('itens_ocupando_espao')} </Text>
       </View>
 
       <FlatList 
@@ -64,7 +64,7 @@ export default function TrashScreen() {
               style={[styles.restoreBtn, { backgroundColor: theme.tint }]}
               onPress={() => handleRestore(item.uri)}
             >
-              <Text style={styles.restoreText}>RESTAURAR</Text>
+              <Text style={styles.restoreText}> {t('restaurar')} </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -73,22 +73,21 @@ export default function TrashScreen() {
           trashFiles.length > 0 ? (
             <View style={{ backgroundColor: '#1A0A0A', padding: 15, borderRadius: 8, marginBottom: 15, borderWidth: 1, borderColor: '#3A1010' }}>
               <Text style={{ color: '#FF0033', fontFamily: 'Inter_400Regular', fontSize: 12 }}>
-                ⚠️ Atenção: Os arquivos na lixeira não foram excluídos do servidor e continuam ocupando espaço do seu Backup em Nuvem.
-              </Text>
+                 {t('ateno_os_arquivos_na_lixe')} </Text>
             </View>
           ) : null
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 40, marginBottom: 15 }}>✨</Text>
-            <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}>Estou tão sozinha aqui....</Text>
+            <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}> {t('estou_to_sozinha_aqui')} </Text>
           </View>
         }
       />
 
       {trashFiles.length > 0 && (
         <TouchableOpacity style={styles.emptyBtn} onPress={handleEmptyTrash}>
-          <Text style={styles.emptyBtnText}>ESVAZIAR LIXEIRA</Text>
+          <Text style={styles.emptyBtnText}> {t('esvaziar_lixeira')} </Text>
         </TouchableOpacity>
       )}
     </View>

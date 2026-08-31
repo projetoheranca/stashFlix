@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'rea
 import { useAppContext } from '@/src/contexts/AppContext';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from "@/src/i18n";
 
 interface FeatureInfo {
   icon: string;
@@ -159,8 +160,7 @@ export default function HelpScreen() {
       <StatusBar style="light" />
       <View style={styles.header}>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          GUIA COMPLETO DE FUNCIONALIDADES DO STASHFLIX
-        </Text>
+           {t('guia_completo_de_funciona')} </Text>
       </View>
 
       <View style={styles.list}>
@@ -176,11 +176,10 @@ export default function HelpScreen() {
             </View>
             <View style={styles.itemTextContainer}>
               <Text style={[styles.itemTitle, { color: theme.text }]}>
-                {item.title} {item.isPremium && <Text style={{ color: '#FFD700', fontSize: 10 }}>[PRO]</Text>}
+                {item.title} {item.isPremium && <Text style={{ color: '#FFD700', fontSize: 10 }}> {t('pro_1')} </Text>}
               </Text>
               <Text style={[styles.itemSub, { color: theme.textSecondary }]} numberOfLines={1}>
-                Clique para ver os detalhes da função
-              </Text>
+                 {t('clique_para_ver_os_detalh')} </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.border} />
           </TouchableOpacity>
@@ -207,21 +206,21 @@ export default function HelpScreen() {
 
                 <ScrollView style={styles.modalScroll} contentContainerStyle={{ paddingBottom: 20 }}>
                   <View style={styles.section}>
-                    <Text style={[styles.sectionHeader, { color: theme.tint }]}>O que é?</Text>
+                    <Text style={[styles.sectionHeader, { color: theme.tint }]}> {t('o_que')} </Text>
                     <Text style={[styles.sectionBody, { color: theme.text }]}>
                       {selectedFeature.whatIs}
                     </Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={[styles.sectionHeader, { color: theme.tint }]}>Para que serve?</Text>
+                    <Text style={[styles.sectionHeader, { color: theme.tint }]}> {t('para_que_serve')} </Text>
                     <Text style={[styles.sectionBody, { color: theme.text }]}>
                       {selectedFeature.whatFor}
                     </Text>
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={[styles.sectionHeader, { color: theme.tint }]}>Como usar?</Text>
+                    <Text style={[styles.sectionHeader, { color: theme.tint }]}> {t('como_usar')} </Text>
                     <Text style={[styles.sectionBody, { color: theme.text }]}>
                       {selectedFeature.howTo}
                     </Text>
@@ -232,7 +231,7 @@ export default function HelpScreen() {
                   style={[styles.closeButton, { backgroundColor: selectedFeature.isPremium ? '#FFD700' : theme.tint }]}
                   onPress={() => setSelectedFeature(null)}
                 >
-                  <Text style={[styles.closeButtonText, { color: '#000' }]}>ENTENDIDO</Text>
+                  <Text style={[styles.closeButtonText, { color: '#000' }]}> {t('entendido')} </Text>
                 </TouchableOpacity>
               </>
             )}

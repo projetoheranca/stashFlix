@@ -18,6 +18,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode, Audio } from 'expo-av';
 import Slider from '@react-native-community/slider';
+import { t } from "@/src/i18n";
 
 const CustomVideoPlayer = ({ uri }: { uri: string }) => {
   const videoRef = useRef<Video>(null);
@@ -167,7 +168,7 @@ const SecureThumbnail = React.memo(function SecureThumbnail({ file }: { file: an
     return (
       <View style={[styles.image, { backgroundColor: '#100505', justifyContent: 'center', alignItems: 'center', borderColor: '#FF0033', borderWidth: 1 }]}>
         <Ionicons name="lock-closed" size={32} color="#FF0033" />
-        <Text style={{ fontSize: 9, color: '#FF0033', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 1 }}>SENHA PROT.</Text>
+        <Text style={{ fontSize: 9, color: '#FF0033', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 1 }}> {t('senha_prot')} </Text>
       </View>
     );
   }
@@ -191,7 +192,7 @@ const SecureThumbnail = React.memo(function SecureThumbnail({ file }: { file: an
     return (
       <View style={[styles.image, { backgroundColor: '#1C1200', justifyContent: 'center', alignItems: 'center', borderColor: '#FFD700', borderWidth: 1 }]}>
         <Ionicons name="musical-notes" size={32} color="#FFD700" />
-        <Text style={{ fontSize: 9, color: '#FFD700', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold' }}>ÁUDIO</Text>
+        <Text style={{ fontSize: 9, color: '#FFD700', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('udio')} </Text>
       </View>
     );
   }
@@ -200,7 +201,7 @@ const SecureThumbnail = React.memo(function SecureThumbnail({ file }: { file: an
     return (
       <View style={[styles.image, { backgroundColor: '#001A33', justifyContent: 'center', alignItems: 'center', borderColor: '#00D0FF', borderWidth: 1 }]}>
         <Ionicons name="document-text" size={32} color="#00D0FF" />
-        <Text style={{ fontSize: 9, color: '#00D0FF', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold' }}>DOC</Text>
+        <Text style={{ fontSize: 9, color: '#00D0FF', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('doc')} </Text>
       </View>
     );
   }
@@ -210,13 +211,13 @@ const SecureThumbnail = React.memo(function SecureThumbnail({ file }: { file: an
       return (
         <View style={[styles.image, { backgroundColor: '#001A18', justifyContent: 'center', alignItems: 'center', borderColor: '#00FFCC', borderWidth: 1 }]}>
           <Ionicons name="videocam" size={32} color="#00FFCC" />
-          <Text style={{ fontSize: 9, color: '#00FFCC', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold' }}>VÍDEO</Text>
+          <Text style={{ fontSize: 9, color: '#00FFCC', marginTop: 4, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('vdeo')} </Text>
         </View>
       );
     }
     return (
       <View style={[styles.image, { backgroundColor: '#111', justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ fontSize: 10, color: '#444' }}>Criptografado</Text>
+        <Text style={{ fontSize: 10, color: '#444' }}> {t('criptografado')} </Text>
       </View>
     );
   }
@@ -764,7 +765,7 @@ export default function AlbumScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ fontSize: 40, marginBottom: 20 }}>🔒</Text>
-        <Text style={[styles.title, { color: theme.text, marginBottom: 20 }]}>ÁLBUM PROTEGIDO</Text>
+        <Text style={[styles.title, { color: theme.text, marginBottom: 20 }]}> {t('lbum_protegido')} </Text>
         <TextInput
           style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border, width: '80%', marginBottom: 20 }]}
           placeholder="SENHA DO ÁLBUM"
@@ -777,10 +778,10 @@ export default function AlbumScreen() {
           style={[styles.createButton, { backgroundColor: theme.tint, width: '80%', padding: 15, alignItems: 'center' }]} 
           onPress={handleUnlock}
         >
-          <Text style={styles.createButtonText}>DESBLOQUEAR</Text>
+          <Text style={styles.createButtonText}> {t('desbloquear')} </Text>
         </TouchableOpacity>
         <TouchableOpacity style={{ marginTop: 20 }} onPress={() => router.back()}>
-          <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}>Voltar</Text>
+          <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}> {t('voltar')} </Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -808,7 +809,7 @@ export default function AlbumScreen() {
         windowSize={5}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}>Nenhum arquivo encontrado.</Text>
+            <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular' }}> {t('nenhum_arquivo_encontrado')} </Text>
           </View>
         }
       />
@@ -827,8 +828,8 @@ export default function AlbumScreen() {
       <Modal visible={moveModalVisible} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: '80%', backgroundColor: theme.surface, padding: 20, borderRadius: 12 }}>
-            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 10 }}>Mover Arquivo</Text>
-            <Text style={{ color: theme.textSecondary, marginBottom: 15 }}>Digite o nome do álbum de destino:</Text>
+            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 10 }}> {t('mover_arquivo')} </Text>
+            <Text style={{ color: theme.textSecondary, marginBottom: 15 }}> {t('digite_o_nome_do_lbum_de_')} </Text>
             <TextInput
               style={{ backgroundColor: '#0F0F0F', color: theme.text, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#1F1F1F', marginBottom: 20 }}
               value={moveDestAlbum}
@@ -837,7 +838,7 @@ export default function AlbumScreen() {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
               <TouchableOpacity onPress={() => setMoveModalVisible(false)} style={{ padding: 10, marginRight: 10 }}>
-                <Text style={{ color: theme.textSecondary }}>Cancelar</Text>
+                <Text style={{ color: theme.textSecondary }}> {t('cancelar')} </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={async () => {
@@ -850,7 +851,7 @@ export default function AlbumScreen() {
                 }} 
                 style={{ backgroundColor: theme.tint, paddingHorizontal: 15, paddingVertical: 10, borderRadius: 6 }}
               >
-                <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}>Mover</Text>
+                <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('mover')} </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -864,10 +865,9 @@ export default function AlbumScreen() {
             <View style={styles.modalIconContainer}>
               <Ionicons name="lock-closed" size={32} color={theme.tint} />
             </View>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Arquivo Protegido</Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}> {t('arquivo_protegido')} </Text>
             <Text style={[styles.modalSubtitle, { color: '#888' }]}>
-              Este arquivo está protegido por senha. Por favor, digite a senha para visualizar.
-            </Text>
+               {t('este_arquivo_est_protegid')} </Text>
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.surfaceHighlight || 'rgba(0,0,0,0.05)', color: theme.text, borderColor: theme.border }]}
               value={pwdInput}
@@ -882,13 +882,13 @@ export default function AlbumScreen() {
                 onPress={() => setPwdModalVisible(false)} 
                 style={styles.modalCancelButton}
               >
-                <Text style={{ color: '#888', fontFamily: 'SpaceGrotesk_700Bold' }}>Cancelar</Text>
+                <Text style={{ color: '#888', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('cancelar')} </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={handleVerifyFilePassword} 
                 style={[styles.modalConfirmButton, { backgroundColor: theme.tint }]}
               >
-                <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}>Acessar</Text>
+                <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('acessar')} </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -902,10 +902,9 @@ export default function AlbumScreen() {
             <View style={styles.modalIconContainer}>
               <Ionicons name="key" size={32} color={theme.tint} />
             </View>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Criptografar Arquivo</Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}> {t('criptografar_arquivo')} </Text>
             <Text style={[styles.modalSubtitle, { color: '#888' }]}>
-              Digite uma senha para este arquivo. Ele ficará vinculado a essa senha.
-            </Text>
+               {t('digite_uma_senha_para_est_1')} </Text>
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.surfaceHighlight || 'rgba(0,0,0,0.05)', color: theme.text, borderColor: theme.border }]}
               value={newFilePwd}
@@ -920,13 +919,13 @@ export default function AlbumScreen() {
                 onPress={() => setEncryptModalVisible(false)} 
                 style={styles.modalCancelButton}
               >
-                <Text style={{ color: '#888', fontFamily: 'SpaceGrotesk_700Bold' }}>Cancelar</Text>
+                <Text style={{ color: '#888', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('cancelar')} </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={handleEncryptFileWithPassword} 
                 style={[styles.modalConfirmButton, { backgroundColor: theme.tint }]}
               >
-                <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}>Criptografar</Text>
+                <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('criptografar')} </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -946,7 +945,7 @@ export default function AlbumScreen() {
           {zoomLoading ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <ActivityIndicator size="large" color={theme.tint} />
-              <Text style={{ color: '#FFF', marginTop: 10, fontFamily: 'Inter_400Regular' }}>Descriptografando arquivo...</Text>
+              <Text style={{ color: '#FFF', marginTop: 10, fontFamily: 'Inter_400Regular' }}> {t('descriptografando_arquivo')} </Text>
             </View>
           ) : (
             zoomImgUri && (() => {
@@ -967,7 +966,7 @@ export default function AlbumScreen() {
                       <Ionicons name={isPlaying ? 'volume-high' : 'mic'} size={48} color="#FFD700" />
                     </View>
 
-                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 6, textAlign: 'center' }}>Player de Áudio Seguro</Text>
+                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 6, textAlign: 'center' }}> {t('player_de_udio_seguro')} </Text>
                     <Text style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 36, textAlign: 'center' }} numberOfLines={1}>{zoomFile?.name}</Text>
 
                     {/* Barra de progresso */}
@@ -1002,14 +1001,14 @@ export default function AlbumScreen() {
                     <View style={{ width: 110, height: 110, borderRadius: 55, borderWidth: 2, borderColor: '#00D0FF', backgroundColor: 'rgba(0, 208, 255, 0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 32, shadowColor: '#00D0FF', shadowOpacity: 0.4, shadowRadius: 20, elevation: 12 }}>
                       <Ionicons name="document-text" size={48} color="#00D0FF" />
                     </View>
-                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 6, textAlign: 'center' }}>Visualizador de Documentos</Text>
+                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 6, textAlign: 'center' }}> {t('visualizador_de_documento')} </Text>
                     <Text style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 36, textAlign: 'center' }} numberOfLines={1}>{zoomFile?.name}</Text>
                     
                     <TouchableOpacity
                       onPress={() => Linking.openURL(zoomImgUri)}
                       style={{ paddingVertical: 14, paddingHorizontal: 32, borderRadius: 8, backgroundColor: '#00D0FF', justifyContent: 'center', alignItems: 'center', shadowColor: '#00D0FF', shadowOpacity: 0.5, shadowRadius: 10, elevation: 6 }}
                     >
-                      <Text style={{ color: '#000', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>Abrir / Baixar Documento</Text>
+                      <Text style={{ color: '#000', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}> {t('abrir__baixar_documento')} </Text>
                     </TouchableOpacity>
                   </View>
                 );
@@ -1028,7 +1027,7 @@ export default function AlbumScreen() {
                 onPress={handleShareFile}
               >
                 <Ionicons name="share-social-outline" size={24} color="#FFF" />
-                <Text style={styles.zoomOptionText}>Enviar</Text>
+                <Text style={styles.zoomOptionText}> {t('enviar')} </Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -1050,7 +1049,7 @@ export default function AlbumScreen() {
                 onPress={() => handleDeleteFileInZoom(zoomFile.id)}
               >
                 <Ionicons name="trash-outline" size={24} color="#FF4D4D" />
-                <Text style={[styles.zoomOptionText, { color: '#FF4D4D' }]}>Deletar</Text>
+                <Text style={[styles.zoomOptionText, { color: '#FF4D4D' }]}> {t('deletar')} </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -1062,17 +1061,15 @@ export default function AlbumScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <ActivityIndicator size="large" color={theme.tint} />
           <Text style={{ color: theme.tint, marginTop: 20, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', textAlign: 'center' }}>
-            CRIPTOGRAFANDO
-          </Text>
-          <Text style={{ color: '#FFF', marginTop: 10, fontSize: 16 }}>{uploadProgress}% concluído</Text>
+             {t('criptografando')} </Text>
+          <Text style={{ color: '#FFF', marginTop: 10, fontSize: 16 }}>{uploadProgress} {t('concludo')} </Text>
           
           <View style={{ width: '80%', height: 6, backgroundColor: '#333', borderRadius: 3, marginTop: 20, overflow: 'hidden' }}>
             <View style={{ width: `${uploadProgress}%`, height: '100%', backgroundColor: theme.tint, borderRadius: 3 }} />
           </View>
           
           <Text style={{ color: '#888', marginTop: 15, fontSize: 12, textAlign: 'center' }}>
-            Não feche o aplicativo enquanto os arquivos estão sendo salvos com segurança de nível militar no cofre.
-          </Text>
+             {t('no_feche_o_aplicativo_enq')} </Text>
         </View>
       </Modal>
     </SafeAreaView>

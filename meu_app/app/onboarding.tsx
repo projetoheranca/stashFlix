@@ -5,6 +5,7 @@ import { Colors } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from "@/src/i18n";
 
 const { width } = Dimensions.get('window');
 
@@ -52,8 +53,7 @@ export default function OnboardingScreen() {
             styles.logoText,
             { color: theme.error, textShadowColor: theme.error, textShadowRadius: 15 }
           ]}>
-            STASHFLIX
-          </Text>
+             {t('stashflix')} </Text>
         </View>
 
         <View style={styles.cardContainer}>
@@ -79,7 +79,7 @@ export default function OnboardingScreen() {
 
       <View style={styles.footer}>
         <Text style={[styles.privacyText, { color: theme.textSecondary }]}>
-          Ao iniciar a sequência, você concorda com nossos <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/terms')}>Termos de Uso</Text>, <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/privacy')}>Política de Privacidade</Text> (LGPD) e <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/support')}>Suporte</Text>.
+           {t('ao_iniciar_a_sequncia_voc')} <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/terms')}> {t('termos_de_uso')} </Text>, <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/privacy')}> {t('poltica_de_privacidade')} </Text>  {t('lgpd_e')} <Text style={{ color: '#00FF66', textDecorationLine: 'underline' }} onPress={() => Linking.openURL('https://stashflix.app/support')}> {t('suporte')} </Text>.
         </Text>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.tint, shadowColor: theme.tint }]}

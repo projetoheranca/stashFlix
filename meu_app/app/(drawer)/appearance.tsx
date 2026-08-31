@@ -6,6 +6,7 @@ import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 import { showRewardedAd } from '@/src/services/AdService';
 import { useRouter } from 'expo-router';
 import { changeIcon, resetIcon } from 'react-native-change-icon';
+import { t } from "@/src/i18n";
 
 export default function AppearanceScreen() {
   const router = useRouter();
@@ -133,7 +134,7 @@ export default function AppearanceScreen() {
       
       {/* TEMA CLARO/ESCURO */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>TEMA DO SISTEMA</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}> {t('tema_do_sistema')} </Text>
         <View style={styles.rowGroup}>
           {(['system', 'dark', 'light'] as const).map(mode => (
             <TouchableOpacity 
@@ -158,7 +159,7 @@ export default function AppearanceScreen() {
 
       {/* TEMA CUSTOMIZADO (MODO CRIADOR) */}
       <View style={[styles.section, { backgroundColor: theme.tint + '1E', borderColor: '#FFD700', borderWidth: 1.5, borderRadius: 12, padding: 16, marginBottom: 30 }]}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>TEMA CUSTOMIZADO (CRIADOR) 👑</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}> {t('tema_customizado_criador')} </Text>
         
         <View style={styles.rowGroup}>
           <TouchableOpacity 
@@ -166,7 +167,7 @@ export default function AppearanceScreen() {
             onPress={() => handleOpenPicker('tint')}
           >
             <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: theme.tint, marginBottom: 10 }} />
-            <Text style={[styles.segmentText, { color: theme.textSecondary }]}>DESTAQUE</Text>
+            <Text style={[styles.segmentText, { color: theme.textSecondary }]}> {t('destaque')} </Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -174,7 +175,7 @@ export default function AppearanceScreen() {
             onPress={() => handleOpenPicker('background')}
           >
             <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: theme.background, marginBottom: 10, borderWidth: 1, borderColor: theme.border }} />
-            <Text style={[styles.segmentText, { color: theme.textSecondary }]}>FUNDO</Text>
+            <Text style={[styles.segmentText, { color: theme.textSecondary }]}> {t('fundo')} </Text>
           </TouchableOpacity>
         </View>
 
@@ -184,7 +185,7 @@ export default function AppearanceScreen() {
             onPress={() => handleOpenPicker('surface')}
           >
             <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: theme.surface, marginBottom: 10, borderWidth: 1, borderColor: theme.border }} />
-            <Text style={[styles.segmentText, { color: theme.textSecondary }]}>CARTÕES</Text>
+            <Text style={[styles.segmentText, { color: theme.textSecondary }]}> {t('cartes')} </Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -192,14 +193,14 @@ export default function AppearanceScreen() {
             onPress={() => handleOpenPicker('text')}
           >
             <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: theme.text, marginBottom: 10, borderWidth: 1, borderColor: theme.border }} />
-            <Text style={[styles.segmentText, { color: theme.textSecondary }]}>TEXTO</Text>
+            <Text style={[styles.segmentText, { color: theme.textSecondary }]}> {t('texto')} </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ESTILO DA TELA DE BLOQUEIO */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>TECLADO DE BLOQUEIO</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}> {t('teclado_de_bloqueio')} </Text>
         <View style={styles.rowGroup}>
           <TouchableOpacity 
             style={[
@@ -213,8 +214,7 @@ export default function AppearanceScreen() {
               styles.segmentText, 
               { color: lockStyle === 'geometric' ? '#000' : theme.textSecondary }
             ]}>
-              GEOMÉTRICO (DIAMANTE)
-            </Text>
+               {t('geomtrico_diamante')} </Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[
@@ -228,18 +228,16 @@ export default function AppearanceScreen() {
               styles.segmentText, 
               { color: lockStyle === 'standard' ? '#000' : theme.textSecondary }
             ]}>
-              PADRÃO (CÍRCULOS)
-            </Text>
+               {t('padro_crculos')} </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ÍCONE DO APLICATIVO */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>ÍCONE DO APLICATIVO</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}> {t('cone_do_aplicativo')} </Text>
         <Text style={{ color: theme.textSecondary, marginBottom: 15, fontSize: 12, fontFamily: 'Inter_400Regular' }}>
-          Escolha um ícone para disfarçar o app na tela inicial. StashFlix é gratuito. Os disfarces requerem o Plano PRO.
-        </Text>
+           {t('escolha_um_cone_para_disf')} </Text>
         <View style={styles.iconRow}>
           {[
             { name: 'default',         label: 'StashFlix',   src: require('@/assets/images/app-icon.jpg'),     isFree: true  },
@@ -283,7 +281,7 @@ export default function AppearanceScreen() {
                   {isSelected && (
                     <View style={{ position: 'absolute', bottom: 2, left: 0, right: 0, alignItems: 'center' }}>
                       <View style={{ backgroundColor: theme.tint, borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1 }}>
-                        <Text style={{ fontSize: 7, color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}>ATIVO</Text>
+                        <Text style={{ fontSize: 7, color: '#000', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('ativo')} </Text>
                       </View>
                     </View>
                   )}
@@ -302,7 +300,7 @@ export default function AppearanceScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 }}>
           <View style={{ backgroundColor: '#111', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#333' }}>
             <Text style={{ color: '#FFF', fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 20, textAlign: 'center' }}>
-              AJUSTE DE COR ({currentEditingColor?.toUpperCase()})
+               {t('ajuste_de_cor')} {currentEditingColor?.toUpperCase()})
             </Text>
             
             <View style={{ width: '100%', marginBottom: 20 }}>
@@ -332,14 +330,13 @@ export default function AppearanceScreen() {
             </View>
 
             <Text style={{ color: theme.textSecondary, fontSize: 12, textAlign: 'center', marginBottom: 15 }}>
-              Toque em uma cor para aplicar instantaneamente.
-            </Text>
+               {t('toque_em_uma_cor_para_apl')} </Text>
 
             <TouchableOpacity 
               style={{ backgroundColor: '#333', padding: 15, borderRadius: 8, alignItems: 'center' }}
               onPress={() => setPickerVisible(false)}
             >
-              <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}>CANCELAR</Text>
+              <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('cancelar_1')} </Text>
             </TouchableOpacity>
           </View>
         </View>

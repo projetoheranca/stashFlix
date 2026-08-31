@@ -11,6 +11,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
+import { t } from "@/src/i18n";
 
 export default function VaultScreen() {
   const router = useRouter();
@@ -181,8 +182,8 @@ export default function VaultScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>SISTEMA DE ARQUIVOS</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Cofre seguro e explorador de mídias</Text>
+        <Text style={[styles.title, { color: theme.text }]}> {t('sistema_de_arquivos')} </Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}> {t('cofre_seguro_e_explorador')} </Text>
       </View>
 
       <View style={{ flex: 1 }}>
@@ -241,8 +242,8 @@ export default function VaultScreen() {
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
                     <Ionicons name="folder-open-outline" size={48} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 15 }} />
-                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center' }}>Nenhum diretório seguro ainda.</Text>
-                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 11, textAlign: 'center', opacity: 0.6, marginTop: 5 }}>Toque no + para criar sua primeira pasta</Text>
+                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center' }}> {t('nenhum_diretrio_seguro_ai')} </Text>
+                    <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 11, textAlign: 'center', opacity: 0.6, marginTop: 5 }}> {t('toque_no__para_criar_sua_')} </Text>
                   </View>
                 }
               />
@@ -286,8 +287,8 @@ export default function VaultScreen() {
       <Modal visible={createPromptVisible} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: '85%', backgroundColor: theme.surface, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
-            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}>Nova Pasta</Text>
-            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}>Digite o nome do novo diretório:</Text>
+            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}> {t('nova_pasta')} </Text>
+            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}> {t('digite_o_nome_do_novo_dir')} </Text>
             <TextInput
               style={{ backgroundColor: theme.background, color: theme.text, padding: 15, borderRadius: 8, borderWidth: 1, borderColor: theme.border, marginBottom: 20, fontFamily: 'SpaceGrotesk_400Regular' }}
               value={newAlbumName}
@@ -296,13 +297,13 @@ export default function VaultScreen() {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
               <Pressable onPress={() => setCreatePromptVisible(false)} style={{ padding: 12 }}>
-                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}>Cancelar</Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('cancelar')} </Text>
               </Pressable>
               <Pressable 
                 onPress={handleCreateAlbum} 
                 style={{ backgroundColor: theme.tint, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
               >
-                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}>Criar</Text>
+                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('criar')} </Text>
               </Pressable>
             </View>
           </View>
@@ -313,8 +314,8 @@ export default function VaultScreen() {
       <Modal visible={promptVisible} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: '85%', backgroundColor: theme.surface, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
-            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}>Renomear Álbum</Text>
-            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}>Digite o novo nome:</Text>
+            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}> {t('renomear_lbum')} </Text>
+            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}> {t('digite_o_novo_nome')} </Text>
             <TextInput
               style={{ backgroundColor: theme.background, color: theme.text, padding: 15, borderRadius: 8, borderWidth: 1, borderColor: theme.border, marginBottom: 20, fontFamily: 'SpaceGrotesk_400Regular' }}
               value={promptText}
@@ -323,7 +324,7 @@ export default function VaultScreen() {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
               <Pressable onPress={() => setPromptVisible(false)} style={{ padding: 12 }}>
-                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}>Cancelar</Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('cancelar')} </Text>
               </Pressable>
               <Pressable 
                 onPress={async () => {
@@ -336,7 +337,7 @@ export default function VaultScreen() {
                 }} 
                 style={{ backgroundColor: theme.tint, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
               >
-                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}>Salvar</Text>
+                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('salvar')} </Text>
               </Pressable>
             </View>
           </View>
@@ -347,8 +348,8 @@ export default function VaultScreen() {
       <Modal visible={pinPromptVisible} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: '85%', backgroundColor: theme.surface, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
-            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}>Proteger Álbum</Text>
-            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}>Digite uma senha para este diretório:</Text>
+            <Text style={{ color: theme.text, fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 8 }}> {t('proteger_lbum')} </Text>
+            <Text style={{ color: theme.textSecondary, marginBottom: 16, fontFamily: 'Inter_400Regular' }}> {t('digite_uma_senha_para_est')} </Text>
             <TextInput
               style={{ backgroundColor: theme.background, color: theme.text, padding: 15, borderRadius: 8, borderWidth: 1, borderColor: theme.border, marginBottom: 20, fontFamily: 'SpaceGrotesk_400Regular' }}
               value={pinText}
@@ -358,7 +359,7 @@ export default function VaultScreen() {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
               <Pressable onPress={() => setPinPromptVisible(false)} style={{ padding: 12 }}>
-                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}>Cancelar</Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: 'SpaceGrotesk_700Bold' }}> {t('cancelar')} </Text>
               </Pressable>
               <Pressable 
                 onPress={async () => {
@@ -370,7 +371,7 @@ export default function VaultScreen() {
                 }} 
                 style={{ backgroundColor: theme.tint, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
               >
-                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}>Salvar</Text>
+                <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold' }}> {t('salvar')} </Text>
               </Pressable>
             </View>
           </View>

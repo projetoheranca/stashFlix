@@ -16,6 +16,7 @@ import { auth } from '@/src/services/FirebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { triggerIntruderAlarm, stopIntruderAlarm } from '@/src/services/IntruderAlarm';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { t } from "@/src/i18n";
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CALC_BTN = (SCREEN_W - 40) / 4; // 4 columns with 10px margin each side
@@ -395,10 +396,9 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
     <Modal visible={showRecovery} transparent animationType="fade">
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.modalTitle, { color: theme.text }]}>Recuperar PIN</Text>
+          <Text style={[styles.modalTitle, { color: theme.text }]}> {t('recuperar_pin')} </Text>
           <Text style={{ color: theme.textSecondary, marginBottom: 15, textAlign: 'center', fontFamily: 'Inter_400Regular' }}>
-            Digite a senha da sua conta {auth.currentUser?.email} para ver seu PIN principal.
-          </Text>
+             {t('digite_a_senha_da_sua_con')} {auth.currentUser?.email}  {t('para_ver_seu_pin_principa')} </Text>
           <TextInput
             style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
             placeholder="Senha da conta"
@@ -409,7 +409,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
           />
           <View style={styles.modalButtons}>
             <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.surfaceHighlight }]} onPress={() => setShowRecovery(false)}>
-              <Text style={[styles.modalBtnText, { color: theme.text }]}>Cancelar</Text>
+              <Text style={[styles.modalBtnText, { color: theme.text }]}> {t('cancelar')} </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={handleRecoverPin}>
               <Text style={styles.modalBtnText}>{recoveryLoading ? 'Verificando...' : 'Recuperar'}</Text>
@@ -440,20 +440,18 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
                 delayLongPress={1500}
                 style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingVertical: 10, paddingRight: 20 }}
               >
-                <Text style={styles.crashTitle}>Erro</Text>
-                <Text style={[styles.crashTitle, { marginLeft: 6 }]}>do Sistema</Text>
+                <Text style={styles.crashTitle}> {t('erro')} </Text>
+                <Text style={[styles.crashTitle, { marginLeft: 6 }]}> {t('do_sistema')} </Text>
               </Pressable>
               <Text style={styles.crashText}>
-                O aplicativo StashFlix parou de funcionar inesperadamente devido a uma falha crítica de sistema.
-              </Text>
+                 {t('o_aplicativo_stashflix_pa')} </Text>
               <TouchableOpacity style={styles.crashButton} onPress={() => BackHandler.exitApp()} activeOpacity={0.8}>
-                <Text style={styles.crashButtonText}>Fechar app</Text>
+                <Text style={styles.crashButtonText}> {t('fechar_app')} </Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={() => setShowRecovery(true)} style={{ marginTop: 30 }}>
               <Text style={{ color: '#555', fontFamily: 'Inter_400Regular', fontSize: 12, textDecorationLine: 'underline' }}>
-                Esqueci o PIN
-              </Text>
+                 {t('esqueci_o_pin')} </Text>
             </TouchableOpacity>
           </View>
         </Modal>
@@ -487,7 +485,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
             )}
             <View style={styles.browserHeader}>
               <Text style={{ marginRight: 6 }}>🔒</Text>
-              <Text style={styles.browserAddress} numberOfLines={1}>https://www.google.com</Text>
+              <Text style={styles.browserAddress} numberOfLines={1}> {t('httpswwwgooglecom')} </Text>
               <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResultsVisible(false); }}>
                 <Text style={{ color: '#888', fontSize: 16 }}>↻</Text>
               </TouchableOpacity>
@@ -526,13 +524,13 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
                 </View>
               ) : (
                 <View style={{ width: '100%', paddingHorizontal: 20 }}>
-                  <Text style={styles.resultsHeader}>Cerca de 1.230.000.000 resultados (0,42 segundos)</Text>
+                  <Text style={styles.resultsHeader}> {t('cerca_de_1230000000_resul')} </Text>
                   <View style={styles.resultCard}>
-                    <Text style={styles.resultTitle}>Resultado para: {searchQuery}</Text>
-                    <Text style={styles.resultSnippet}>Não foram encontradas informações relevantes para sua pesquisa. Tente refinar os termos usados.</Text>
+                    <Text style={styles.resultTitle}> {t('resultado_para')} {searchQuery}</Text>
+                    <Text style={styles.resultSnippet}> {t('no_foram_encontradas_info')} </Text>
                   </View>
                   <TouchableOpacity style={styles.backSearchBtn} onPress={() => setSearchResultsVisible(false)}>
-                    <Text style={styles.backSearchBtnText}>Voltar para o Buscador</Text>
+                    <Text style={styles.backSearchBtnText}> {t('voltar_para_o_buscador')} </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -638,14 +636,14 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
           )}
 
           <MaskedView
-            maskElement={<Text style={[styles.title, { backgroundColor: 'transparent', textAlign: 'center' }]}>StashFlix</Text>}
+            maskElement={<Text style={[styles.title, { backgroundColor: 'transparent', textAlign: 'center' }]}> {t('stashflix_1')} </Text>}
           >
             <LinearGradient
               colors={['#FF0033', '#FF4500']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={[styles.title, { opacity: 0, textAlign: 'center' }]}>StashFlix</Text>
+              <Text style={[styles.title, { opacity: 0, textAlign: 'center' }]}> {t('stashflix_1')} </Text>
             </LinearGradient>
           </MaskedView>
 
@@ -709,8 +707,7 @@ export default function LockScreen({ visible, onUnlocked }: LockScreenProps) {
 
           <TouchableOpacity onPress={() => setShowRecovery(true)} style={{ marginTop: 30 }}>
             <Text style={{ color: theme.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 13, textDecorationLine: 'underline' }}>
-              Esqueci o PIN
-            </Text>
+               {t('esqueci_o_pin')} </Text>
           </TouchableOpacity>
         </View>
       </Modal>

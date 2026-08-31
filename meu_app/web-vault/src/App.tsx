@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import { t } from "@/src/i18n";
 
 interface User {
   id: string;
@@ -28,7 +29,7 @@ function App() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo-box">S</div>
-          <h2 className="brand">StashFlix Admin</h2>
+          <h2 className="brand"> {t('stashflix_admin')} </h2>
         </div>
         
         <nav className="sidebar-nav">
@@ -36,26 +37,22 @@ function App() {
             className={`nav-btn ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
           >
-            <span className="icon">📊</span> Visão Geral
-          </button>
+            <span className="icon">📊</span>  {t('viso_geral')} </button>
           <button 
             className={`nav-btn ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
-            <span className="icon">👥</span> Usuários
-          </button>
+            <span className="icon">👥</span>  {t('usurios')} </button>
           <button 
             className={`nav-btn ${activeTab === 'emails' ? 'active' : ''}`}
             onClick={() => setActiveTab('emails')}
           >
-            <span className="icon">✉️</span> Disparos
-          </button>
+            <span className="icon">✉️</span>  {t('disparos')} </button>
         </nav>
 
         <div className="sidebar-footer">
           <button className="logout-btn">
-            Sair do Painel
-          </button>
+             {t('sair_do_painel')} </button>
         </div>
       </aside>
 
@@ -68,8 +65,8 @@ function App() {
             {activeTab === 'emails' && 'Central de Comunicação'}
           </h1>
           <div className="admin-profile">
-            <span className="admin-name">Super Admin</span>
-            <div className="admin-avatar">SA</div>
+            <span className="admin-name"> {t('super_admin')} </span>
+            <div className="admin-avatar"> {t('sa')} </div>
           </div>
         </header>
 
@@ -77,24 +74,24 @@ function App() {
           {activeTab === 'overview' && (
             <div className="dashboard-grid">
               <div className="metric-card primary">
-                <div className="metric-title">Cofres Ativos</div>
+                <div className="metric-title"> {t('cofres_ativos')} </div>
                 <div className="metric-value">1,248</div>
-                <div className="metric-trend positive">↑ 12% este mês</div>
+                <div className="metric-trend positive"> {t('12_este_ms')} </div>
               </div>
               <div className="metric-card secondary">
-                <div className="metric-title">Armazenamento Cloud</div>
-                <div className="metric-value">48.5 TB</div>
-                <div className="metric-trend">Total alocado</div>
+                <div className="metric-title"> {t('armazenamento_cloud')} </div>
+                <div className="metric-value"> {t('485_tb')} </div>
+                <div className="metric-trend"> {t('total_alocado')} </div>
               </div>
               <div className="metric-card accent">
-                <div className="metric-title">Assinantes PRO</div>
+                <div className="metric-title"> {t('assinantes_pro')} </div>
                 <div className="metric-value">312</div>
-                <div className="metric-trend positive">↑ 5% esta semana</div>
+                <div className="metric-trend positive"> {t('5_esta_semana')} </div>
               </div>
               <div className="metric-card warning">
-                <div className="metric-title">Alertas de Invasão</div>
+                <div className="metric-title"> {t('alertas_de_invaso')} </div>
                 <div className="metric-value">84</div>
-                <div className="metric-trend negative">Detectados hoje</div>
+                <div className="metric-trend negative"> {t('detectados_hoje')} </div>
               </div>
             </div>
           )}
@@ -102,7 +99,7 @@ function App() {
           {activeTab === 'users' && (
             <div className="panel-card">
               <div className="panel-header">
-                <h3>Base de Usuários</h3>
+                <h3> {t('base_de_usurios')} </h3>
                 <div className="search-box">
                   <input type="text" placeholder="Buscar por e-mail..." className="input-field" />
                 </div>
@@ -111,13 +108,13 @@ function App() {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>E-mail</th>
-                      <th>Plano</th>
-                      <th>Armazenamento</th>
-                      <th>Último Login</th>
-                      <th>Status</th>
-                      <th>Ações</th>
+                      <th> {t('id')} </th>
+                      <th> {t('email')} </th>
+                      <th> {t('plano_1')} </th>
+                      <th> {t('armazenamento')} </th>
+                      <th> {t('ltimo_login')} </th>
+                      <th> {t('status')} </th>
+                      <th> {t('aes')} </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -137,8 +134,8 @@ function App() {
                           {user.status}
                         </td>
                         <td>
-                          <button className="action-btn">Ver</button>
-                          <button className="action-btn text-danger">Bloquear</button>
+                          <button className="action-btn"> {t('ver')} </button>
+                          <button className="action-btn text-danger"> {t('bloquear')} </button>
                         </td>
                       </tr>
                     ))}
@@ -151,23 +148,23 @@ function App() {
           {activeTab === 'emails' && (
             <div className="panel-card email-composer">
               <div className="panel-header">
-                <h3>Nova Campanha / Alerta</h3>
+                <h3> {t('nova_campanha__alerta')} </h3>
               </div>
               <div className="form-group">
-                <label>Público Alvo</label>
+                <label> {t('pblico_alvo')} </label>
                 <select 
                   className="input-field"
                   value={emailType}
                   onChange={(e) => setEmailType(e.target.value)}
                 >
-                  <option value="update">Todos (Aviso de Atualização)</option>
-                  <option value="pro">Apenas Usuários PRO</option>
-                  <option value="free">Promoção para Usuários FREE</option>
-                  <option value="cancel">Aviso de Cancelamento/Inatividade</option>
+                  <option value="update"> {t('todos_aviso_de_atualizao')} </option>
+                  <option value="pro"> {t('apenas_usurios_pro')} </option>
+                  <option value="free"> {t('promoo_para_usurios_free')} </option>
+                  <option value="cancel"> {t('aviso_de_cancelamentoinat')} </option>
                 </select>
               </div>
               <div className="form-group">
-                <label>Assunto do E-mail</label>
+                <label> {t('assunto_do_email')} </label>
                 <input 
                   type="text" 
                   className="input-field" 
@@ -177,7 +174,7 @@ function App() {
                 />
               </div>
               <div className="form-group">
-                <label>Corpo da Mensagem (HTML suportado)</label>
+                <label> {t('corpo_da_mensagem_html_su')} </label>
                 <textarea 
                   className="input-field textarea-field" 
                   placeholder="Escreva a mensagem aqui..."
@@ -187,10 +184,9 @@ function App() {
                 ></textarea>
               </div>
               <div className="form-actions">
-                <button className="btn-secondary">Salvar Rascunho</button>
+                <button className="btn-secondary"> {t('salvar_rascunho')} </button>
                 <button className="btn-primary" onClick={() => alert('E-mails disparados com sucesso!')}>
-                  🚀 Disparar E-mails
-                </button>
+                   {t('disparar_emails')} </button>
               </div>
             </div>
           )}

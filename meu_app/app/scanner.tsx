@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { useRouter } from 'expo-router';
 import * as MediaLibrary from 'expo-media-library';
 import { useAppContext } from '@/src/contexts/AppContext';
+import { t } from "@/src/i18n";
 
 export default function ExposureScanner() {
   const router = useRouter();
@@ -45,14 +46,13 @@ export default function ExposureScanner() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>AUDITORIA DE RISCO</Text>
+      <Text style={[styles.title, { color: theme.text }]}> {t('auditoria_de_risco')} </Text>
       
       {scanning ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.tint} />
           <Text style={[styles.desc, { color: theme.textSecondary, marginTop: 20 }]}>
-            Analisando sua galeria pública e aplicativos de mensagem em busca de mídia sensível exposta...
-          </Text>
+             {t('analisando_sua_galeria_pb')} </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.center}>
@@ -60,17 +60,16 @@ export default function ExposureScanner() {
             <Text style={[styles.alertCount, { color: theme.error }]}>{exposedCount}</Text>
           </View>
           
-          <Text style={[styles.alertTitle, { color: theme.text }]}>MÍDIAS VULNERÁVEIS</Text>
+          <Text style={[styles.alertTitle, { color: theme.text }]}> {t('mdias_vulnerveis')} </Text>
           <Text style={[styles.desc, { color: theme.textSecondary, marginBottom: 40 }]}>
-            O scanner identificou {exposedCount} fotos/vídeos na sua galeria pública que apresentam alto risco de exposição se seu aparelho for vasculhado.
-          </Text>
+             {t('o_scanner_identificou')} {exposedCount}  {t('fotosvdeos_na_sua_galeria')} </Text>
 
           <TouchableOpacity style={[styles.proBtn, { backgroundColor: theme.tint }]} onPress={() => router.push('/paywall')}>
-            <Text style={styles.proBtnText}>PROTEGER COM O PLANO PRO</Text>
+            <Text style={styles.proBtnText}> {t('proteger_com_o_plano_pro')} </Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
-            <Text style={{ color: theme.textSecondary, fontWeight: 'bold' }}>Ignorar o Risco</Text>
+            <Text style={{ color: theme.textSecondary, fontWeight: 'bold' }}> {t('ignorar_o_risco')} </Text>
           </TouchableOpacity>
         </ScrollView>
       )}

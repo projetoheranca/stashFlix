@@ -5,6 +5,7 @@ import { useColorScheme } from '../hooks/use-color-scheme';
 import * as MediaLibrary from 'expo-media-library';
 import { useCameraPermissions } from 'expo-camera';
 import { Audio } from 'expo-av';
+import { t } from "@/src/i18n";
 
 export default function PermissionsScreen() {
   const router = useRouter();
@@ -63,16 +64,15 @@ export default function PermissionsScreen() {
           <Text style={{ fontSize: 50 }}>📸</Text>
         </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>Permissão de Acesso</Text>
+        <Text style={[styles.title, { color: theme.text }]}> {t('permisso_de_acesso')} </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Para mover suas fotos e vídeos para o cofre seguro, precisamos de permissão para ler e modificar a sua galeria.
-        </Text>
+           {t('para_mover_suas_fotos_e_v')} </Text>
 
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.cardTitle, { color: theme.text }]}>O que faremos:</Text>
-          <Text style={[styles.cardItem, { color: theme.textSecondary }]}>✓ Ler mídias para importação</Text>
-          <Text style={[styles.cardItem, { color: theme.textSecondary }]}>✓ Apagar da galeria original (após o cofre)</Text>
-          <Text style={[styles.cardItem, { color: theme.textSecondary }]}>✗ NUNCA enviaremos seus dados para servidores públicos sem sua autorização</Text>
+          <Text style={[styles.cardTitle, { color: theme.text }]}> {t('o_que_faremos')} </Text>
+          <Text style={[styles.cardItem, { color: theme.textSecondary }]}> {t('ler_mdias_para_importao')} </Text>
+          <Text style={[styles.cardItem, { color: theme.textSecondary }]}> {t('apagar_da_galeria_origina')} </Text>
+          <Text style={[styles.cardItem, { color: theme.textSecondary }]}> {t('nunca_enviaremos_seus_dad')} </Text>
         </View>
       </View>
 
@@ -81,13 +81,13 @@ export default function PermissionsScreen() {
           style={[styles.button, { backgroundColor: theme.tint }]}
           onPress={handleRequestPermission}
         >
-          <Text style={styles.buttonText}>Conceder Acesso</Text>
+          <Text style={styles.buttonText}> {t('conceder_acesso')} </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.skipButton}
           onPress={() => router.push('/setup-pin')}
         >
-          <Text style={[styles.skipButtonText, { color: theme.textSecondary }]}>Pular por enquanto</Text>
+          <Text style={[styles.skipButtonText, { color: theme.textSecondary }]}> {t('pular_por_enquanto')} </Text>
         </TouchableOpacity>
       </View>
     </View>

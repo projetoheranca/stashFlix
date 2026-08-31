@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/services/FirebaseConfig';
 import { saveUserPreferences } from '@/src/services/FirebaseDB';
 import { Colors } from '@/constants/theme';
+import { t } from "@/src/i18n";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -43,8 +44,8 @@ export default function RegisterScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: currentColors.background }]}>
-      <Text style={[styles.title, { color: currentColors.text }]}>NOVO AGENTE</Text>
-      <Text style={styles.subtitle}>CRIAR CREDENCIAIS DE ACESSO</Text>
+      <Text style={[styles.title, { color: currentColors.text }]}> {t('novo_agente')} </Text>
+      <Text style={styles.subtitle}> {t('criar_credenciais_de_aces')} </Text>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -92,7 +93,7 @@ export default function RegisterScreen() {
         {loading ? (
           <ActivityIndicator color="#000" />
         ) : (
-          <Text style={styles.loginText}>CRIAR CONTA</Text>
+          <Text style={styles.loginText}> {t('criar_conta')} </Text>
         )}
       </TouchableOpacity>
 
@@ -101,7 +102,7 @@ export default function RegisterScreen() {
         onPress={() => router.back()}
       >
         <Text style={[styles.registerText, { color: currentColors.textSecondary }]}>
-          Já possui uma conta? <Text style={{color: '#FF0033'}}>Entrar</Text>
+           {t('j_possui_uma_conta')} <Text style={{color: '#FF0033'}}> {t('entrar')} </Text>
         </Text>
       </TouchableOpacity>
     </View>

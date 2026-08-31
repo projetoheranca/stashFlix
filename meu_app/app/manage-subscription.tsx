@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import Purchases from 'react-native-purchases';
 import { getCloudTelemetry } from '@/src/services/VaultService';
+import { t } from "@/src/i18n";
 
 export default function ManageSubscriptionScreen() {
   const router = useRouter();
@@ -115,7 +116,7 @@ export default function ManageSubscriptionScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 10 }}>
           <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>PAINEL DO ASSINANTE</Text>
+        <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}> {t('painel_do_assinante')} </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -128,37 +129,37 @@ export default function ManageSubscriptionScreen() {
         >
           <Ionicons name={isUltra ? "diamond" : "shield-checkmark"} size={40} color="#000" />
           <View style={{ marginLeft: 15 }}>
-            <Text style={styles.planTitle}>PLANO {userPlan}</Text>
-            <Text style={styles.planStatus}>STATUS: ATIVO</Text>
+            <Text style={styles.planTitle}> {t('plano')} {userPlan}</Text>
+            <Text style={styles.planStatus}> {t('status_ativo')} </Text>
           </View>
         </LinearGradient>
 
         <View style={styles.cardBody}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Membro desde:</Text>
+            <Text style={styles.infoLabel}> {t('membro_desde')} </Text>
             <Text style={[styles.infoValue, { color: '#FFFFFF' }]}>{subDate}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Próxima Cobrança:</Text>
-            <Text style={[styles.infoValue, { color: '#FFFFFF' }]}>Gerenciado pela Loja</Text>
+            <Text style={styles.infoLabel}> {t('prxima_cobrana')} </Text>
+            <Text style={[styles.infoValue, { color: '#FFFFFF' }]}> {t('gerenciado_pela_loja')} </Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Método de Pagamento:</Text>
-            <Text style={[styles.infoValue, { color: '#FFFFFF' }]}>Google Play / App Store</Text>
+            <Text style={styles.infoLabel}> {t('mtodo_de_pagamento')} </Text>
+            <Text style={[styles.infoValue, { color: '#FFFFFF' }]}> {t('google_play__app_store')} </Text>
           </View>
         </View>
       </View>
 
       {/* Dashboard Analytics */}
       <View style={styles.dashboardContainer}>
-        <Text style={styles.sectionTitle}>CONSUMO DE DADOS</Text>
+        <Text style={styles.sectionTitle}> {t('consumo_de_dados')} </Text>
         
         <View style={styles.statCard}>
           <View style={styles.statHeader}>
             <Ionicons name="cloud-done" size={20} color={isUltra ? "#00FFCC" : "#FFD700"} />
-            <Text style={styles.statLabel}>Armazenamento em Nuvem</Text>
+            <Text style={styles.statLabel}> {t('armazenamento_em_nuvem')} </Text>
           </View>
           
           <View style={styles.progressContainer}>
@@ -177,7 +178,7 @@ export default function ManageSubscriptionScreen() {
           <View style={styles.statCard}>
             <View style={styles.statHeader}>
               <Ionicons name="document-text" size={20} color="#FFD700" />
-              <Text style={styles.statLabel}>Limite de Arquivos (Free)</Text>
+              <Text style={styles.statLabel}> {t('limite_de_arquivos_free')} </Text>
             </View>
             <View style={styles.progressContainer}>
               <View style={styles.progressTrack}>
@@ -185,8 +186,8 @@ export default function ManageSubscriptionScreen() {
               </View>
             </View>
             <View style={styles.statFooter}>
-              <Text style={[styles.statValue, { color: usage.count >= 50 ? '#FF0033' : '#FFF' }]}>{usage.count} arquivos</Text>
-              <Text style={styles.statLimit}>/ 50 Max</Text>
+              <Text style={[styles.statValue, { color: usage.count >= 50 ? '#FF0033' : '#FFF' }]}>{usage.count}  {t('arquivos')} </Text>
+              <Text style={styles.statLimit}> {t('50_max')} </Text>
             </View>
           </View>
         )}
@@ -200,7 +201,7 @@ export default function ManageSubscriptionScreen() {
           onPress={() => router.push('/paywall')}
         >
           <Ionicons name="rocket" size={24} color="#00FFCC" />
-          <Text style={styles.upgradeText}>FAZER UPGRADE PARA ULTRA</Text>
+          <Text style={styles.upgradeText}> {t('fazer_upgrade_para_ultra')} </Text>
         </TouchableOpacity>
       )}
 
@@ -214,14 +215,13 @@ export default function ManageSubscriptionScreen() {
             onPress={handleCancel}
           >
             <Ionicons name="close-circle-outline" size={20} color={theme.error} />
-            <Text style={[styles.actionBtnText, { color: theme.error }]}>Gerenciar / Cancelar Assinatura</Text>
+            <Text style={[styles.actionBtnText, { color: theme.error }]}> {t('gerenciar__cancelar_assin')} </Text>
           </TouchableOpacity>
         )}
       </View>
 
       <Text style={styles.disclaimer}>
-        O StashFlix não gerencia cobranças diretamente. Todas as transações e cancelamentos são processados com segurança pela loja de aplicativos do seu dispositivo (Apple ou Google).
-      </Text>
+         {t('o_stashflix_no_gerencia_c')} </Text>
 
     </ScrollView>
   );

@@ -16,6 +16,7 @@ import { ref, get } from 'firebase/database';
 import { triggerIntruderAlarm, stopIntruderAlarm } from '@/src/services/IntruderAlarm';
 import * as ScreenCapture from 'expo-screen-capture';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
+import { t } from "@/src/i18n";
 
 export default function AntiInvasionScreen() {
   const router = useRouter();
@@ -354,8 +355,8 @@ export default function AntiInvasionScreen() {
               </View>
             </MaskedView>
           </View>
-          <Text style={[styles.title, { color: theme.text }]}>QUARTEL-GENERAL</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Sistemas de Defesa Ativos</Text>
+          <Text style={[styles.title, { color: theme.text }]}> {t('quartelgeneral')} </Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}> {t('sistemas_de_defesa_ativos')} </Text>
         </LinearGradient>
 
         {/* Arsenal de Defesa */}
@@ -367,16 +368,15 @@ export default function AntiInvasionScreen() {
             <TouchableOpacity style={styles.optionLeft} onPress={handleChangeAlarmSound}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Alarme Sonoro (Sirene)</Text>
-                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                  <Text style={[styles.optionText, { color: theme.text }]}> {t('alarme_sonoro_sirene')} </Text>
+                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
                 </View>
                 <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
                   {alarmSirenSound === 'sirene_policial' ? '🚨 Sirene Policial selecionada' :
                    alarmSirenSound === 'spaceship_alarm.ogg' ? '🛸 Alarme Espacial selecionado' :
                    alarmSirenSound === 'alarm_clock.ogg' ? '📻 Despertador Antigo selecionado' :
                    alarmSirenSound === 'dosimeter_alarm.ogg' ? '☢️ Sirene de Dosímetro selecionada' :
-                   '⏰ Despertador Digital selecionado'} — toque para trocar
-                </Text>
+                   '⏰ Despertador Digital selecionado'}  {t('toque_para_trocar')} </Text>
               </View>
             </TouchableOpacity>
             <Switch value={alarmSiren} onValueChange={handleToggleAlarmSiren} trackColor={{ false: theme.surfaceHighlight, true: theme.error || '#FF0033' }} thumbColor={alarmSiren ? '#FFF' : '#888'} />
@@ -388,8 +388,8 @@ export default function AntiInvasionScreen() {
           <View style={styles.optionRow}>
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
-                <Text style={[styles.optionText, { color: theme.text }]}>Captura de Intruso (Foto)</Text>
-                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Tira uma foto em segredo de quem errar a senha</Text>
+                <Text style={[styles.optionText, { color: theme.text }]}> {t('captura_de_intruso_foto')} </Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('tira_uma_foto_em_segredo_')} </Text>
               </View>
             </View>
             <Switch value={breakInAlerts} onValueChange={handleToggleAlerts} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={breakInAlerts ? '#FFF' : '#888'} />
@@ -425,8 +425,8 @@ export default function AntiInvasionScreen() {
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Gravação de Intruso (Vídeo)</Text>
-                  <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
+                  <Text style={[styles.optionText, { color: theme.text }]}> {t('gravao_de_intruso_vdeo')} </Text>
+                  <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}> {t('ultra')} </Text></View>
                 </View>
                 <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>
                   {intruderVideoDuration === '0' ? 'Gravação desativada' : `Gravar vídeo oculto de ${intruderVideoDuration}s`}
@@ -442,10 +442,10 @@ export default function AntiInvasionScreen() {
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Gravação de Intruso (Áudio)</Text>
-                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                  <Text style={[styles.optionText, { color: theme.text }]}> {t('gravao_de_intruso_udio')} </Text>
+                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
                 </View>
-                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Grava o áudio do ambiente secretamente ao errarem a senha</Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('grava_o_udio_do_ambiente_')} </Text>
               </View>
             </View>
             <Switch value={spyMic} onValueChange={handleToggleSpyMic} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={spyMic ? '#FFF' : '#888'} />
@@ -458,10 +458,10 @@ export default function AntiInvasionScreen() {
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Modo Fantasma (Ocultar)</Text>
-                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                  <Text style={[styles.optionText, { color: theme.text }]}> {t('modo_fantasma_ocultar')} </Text>
+                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
                 </View>
-                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Oculta a prévia da tela do app nos aplicativos recentes</Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('oculta_a_prvia_da_tela_do')} </Text>
               </View>
             </View>
             <Switch value={ghostMode} onValueChange={handleToggleGhostMode} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={ghostMode ? '#FFF' : '#888'} />
@@ -474,10 +474,10 @@ export default function AntiInvasionScreen() {
             <View style={styles.optionLeft}>
               <View style={styles.textWrapper}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.optionText, { color: theme.text }]}>Bloqueio de Prints</Text>
-                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+                  <Text style={[styles.optionText, { color: theme.text }]}> {t('bloqueio_de_prints')} </Text>
+                  <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
                 </View>
-                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}>Impede que tirem fotos ou gravem a tela do app (Android)</Text>
+                <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.6 }]}> {t('impede_que_tirem_fotos_ou')} </Text>
               </View>
             </View>
             <Switch value={blockPrints} onValueChange={handleToggleBlockPrints} trackColor={{ false: theme.surfaceHighlight, true: theme.tint }} thumbColor={blockPrints ? '#FFF' : '#888'} />
@@ -517,8 +517,8 @@ export default function AntiInvasionScreen() {
           <Ionicons name="timer-outline" size={24} color={deadManSwitch !== 'Desativado' ? (theme.error || '#FF0033') : theme.textSecondary} style={{ marginRight: 15 }} />
           <View style={{ flex: 1 }}>
             <View style={styles.titleRow}>
-              <Text style={[styles.optionText, { color: deadManSwitch !== 'Desativado' ? (theme.error || '#FF0033') : theme.text }]}>Tempo de Autodestruição</Text>
-              <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}>ULTRA</Text></View>
+              <Text style={[styles.optionText, { color: deadManSwitch !== 'Desativado' ? (theme.error || '#FF0033') : theme.text }]}> {t('tempo_de_autodestruio')} </Text>
+              <View style={[styles.proBadge, { backgroundColor: '#00FFCC' }]}><Text style={[styles.proText, { color: '#000' }]}> {t('ultra')} </Text></View>
             </View>
             <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.8, marginTop: 4 }]}>
               {deadManSwitch === 'Desativado' ? 'Apaga o cofre em caso de inatividade.' : `Autodestruição em ${deadManSwitch}`}
@@ -535,10 +535,9 @@ export default function AntiInvasionScreen() {
         >
           <Ionicons name="eye" size={24} color={theme.tint} style={{ marginRight: 15 }} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.optionText, { color: theme.text }]}>Visualizar todos os intrusos</Text>
+            <Text style={[styles.optionText, { color: theme.text }]}> {t('visualizar_todos_os_intru')} </Text>
             <Text style={[styles.optionDesc, { color: theme.textSecondary, opacity: 0.8, marginTop: 4 }]}>
-              {alerts.length} registros de invasores detectados.
-            </Text>
+              {alerts.length}  {t('registros_de_invasores_de')} </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
         </TouchableOpacity>
@@ -564,7 +563,7 @@ export default function AntiInvasionScreen() {
                     <Text style={{ color: typeColor, fontSize: 11, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 1.5 }}>{typeLabel}</Text>
                   </View>
                   <View>
-                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 15 }}>Intruso Bloqueado</Text>
+                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 15 }}> {t('intruso_bloqueado')} </Text>
                     <Text style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter_400Regular', fontSize: 11 }}>{formatDate(selectedAlert.timestamp)}</Text>
                   </View>
                 </View>
@@ -601,7 +600,7 @@ export default function AntiInvasionScreen() {
                         </View>
                         <Text style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular', fontSize: 11 }}>{formatMillis(videoStatus.durationMillis)}</Text>
                       </View>
-                      <Text style={{ color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter_400Regular', fontSize: 10, textAlign: 'center' }}>Toque no vídeo para pausar</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter_400Regular', fontSize: 10, textAlign: 'center' }}> {t('toque_no_vdeo_para_pausar')} </Text>
                     </View>
                   </View>
                 )}
@@ -613,7 +612,7 @@ export default function AntiInvasionScreen() {
                     <View style={{ width: 110, height: 110, borderRadius: 55, borderWidth: 2, borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 32, shadowColor: '#FFD700', shadowOpacity: 0.4, shadowRadius: 20 }}>
                       <Ionicons name={mediaPlayerPlaying ? 'volume-high' : 'mic'} size={48} color="#FFD700" />
                     </View>
-                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 6 }}>Intruso Bloqueado</Text>
+                    <Text style={{ color: '#FFF', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 16, marginBottom: 6 }}> {t('intruso_bloqueado')} </Text>
                     <Text style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 36 }}>{formatDate(selectedAlert.timestamp)}</Text>
 
                     {/* Progress bar */}
@@ -639,7 +638,7 @@ export default function AntiInvasionScreen() {
                 {!selectedAlert.uri && (
                   <View style={{ alignItems: 'center' }}>
                     <Ionicons name="cloud-offline-outline" size={64} color="rgba(255,255,255,0.2)" />
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', marginTop: 16, fontFamily: 'Inter_400Regular' }}>Mídia não disponível</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', marginTop: 16, fontFamily: 'Inter_400Regular' }}> {t('mdia_no_disponvel')} </Text>
                   </View>
                 )}
               </View>
@@ -651,7 +650,7 @@ export default function AntiInvasionScreen() {
                   onPress={() => selectedAlert.uri && handleShareAlert(selectedAlert.uri)}
                 >
                   <Ionicons name="share-social-outline" size={20} color="rgba(255,255,255,0.7)" />
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 13 }}>Compartilhar</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 13 }}> {t('compartilhar')} </Text>
                 </TouchableOpacity>
                 <View style={{ width: 0.5, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 12 }} />
                 <TouchableOpacity
@@ -664,7 +663,7 @@ export default function AntiInvasionScreen() {
                   }}
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  <Text style={{ color: '#FF3B30', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 13 }}>Apagar</Text>
+                  <Text style={{ color: '#FF3B30', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 13 }}> {t('apagar')} </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -677,10 +676,9 @@ export default function AntiInvasionScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.error || '#FF0033', borderWidth: 1 }]}>
             <Ionicons name="warning" size={40} color={theme.error || '#FF0033'} style={{ alignSelf: 'center', marginBottom: 10 }} />
-            <Text style={[styles.modalTitle, { color: theme.error || '#FF0033' }]}>PIN KAMIKAZE</Text>
+            <Text style={[styles.modalTitle, { color: theme.error || '#FF0033' }]}> {t('pin_kamikaze')} </Text>
             <Text style={[styles.modalDesc, { color: theme.textSecondary }]}>
-              Se você for coagido a abrir o cofre, digite este PIN. Ele vai apagar permanentemente seus dados do cofre real e abrir o cofre falso em seguida.
-            </Text>
+               {t('se_voc_for_coagido_a_abri')} </Text>
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
               placeholder="Digite o PIN Kamikaze"
@@ -693,10 +691,10 @@ export default function AntiInvasionScreen() {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
               <TouchableOpacity style={styles.btnCancel} onPress={() => { setKamikazeModalVisible(false); setNewKamikazePin(''); }}>
-                <Text style={{ color: '#FFF', fontFamily: 'Inter_600SemiBold' }}>CANCELAR</Text>
+                <Text style={{ color: '#FFF', fontFamily: 'Inter_600SemiBold' }}> {t('cancelar_1')} </Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btnSave, { backgroundColor: theme.error || '#FF0033' }]} onPress={handleSetKamikazePin}>
-                <Text style={{ color: '#FFF', fontFamily: 'Inter_600SemiBold' }}>SALVAR PIN</Text>
+                <Text style={{ color: '#FFF', fontFamily: 'Inter_600SemiBold' }}> {t('salvar_pin')} </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -711,8 +709,7 @@ export default function AntiInvasionScreen() {
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
             <Text style={{ fontSize: 18, fontFamily: 'SpaceGrotesk_700Bold', color: theme.text, marginLeft: 10 }}>
-              INTRUSOS CAPTURADOS
-            </Text>
+               {t('intrusos_capturados')} </Text>
           </View>
 
           <FlatList
@@ -722,10 +719,10 @@ export default function AntiInvasionScreen() {
             ListEmptyComponent={
               <View style={[styles.emptyContainer, { marginTop: 100 }]}>
                 <Ionicons name="shield-checkmark" size={60} color={theme.tint} style={{ opacity: 0.5 }} />
-                <Text style={[styles.emptyText, { color: theme.textSecondary, marginTop: 20 }]}>Nenhum registro encontrado.</Text>
+                <Text style={[styles.emptyText, { color: theme.textSecondary, marginTop: 20 }]}> {t('nenhum_registro_encontrad')} </Text>
                 {activationDate && (
                   <Text style={{ marginTop: 15, fontSize: 13, color: theme.tint, opacity: 0.8, fontFamily: 'Inter_600SemiBold', textAlign: 'center' }}>
-                    Sistema de defesa online desde:{'\n'}
+                     {t('sistema_de_defesa_online_')} {'\n'}
                     <Text style={{ color: theme.text, fontFamily: 'SpaceGrotesk_400Regular' }}>{formatDate(activationDate)}</Text>
                   </Text>
                 )}
@@ -761,7 +758,7 @@ export default function AntiInvasionScreen() {
                         <View style={{ backgroundColor: typeColor + '22', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 }}>
                           <Text style={{ color: typeColor, fontSize: 9, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 1 }}>{typeLabel}</Text>
                         </View>
-                        <Text style={[styles.cardTitle, { color: theme.text, fontSize: 13 }]}>Intruso Bloqueado</Text>
+                        <Text style={[styles.cardTitle, { color: theme.text, fontSize: 13 }]}> {t('intruso_bloqueado')} </Text>
                       </View>
                       <Text style={[styles.cardDate, { color: theme.textSecondary }]}>{formatDate(item.timestamp)}</Text>
                       <Text style={{ fontSize: 10, color: item.fromCloud ? theme.tint : theme.textSecondary, marginTop: 3, opacity: 0.8 }}>

@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/services/FirebaseConfig';
 import { useAppContext } from '@/src/contexts/AppContext';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from "@/src/i18n";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function LoginScreen() {
         source={isDark ? require('@/assets/images/logo-dark.png') : require('@/assets/images/logo.png')}
         style={styles.logo}
       />
-      <Text style={styles.subtitle}>AUTENTICAÇÃO NECESSÁRIA</Text>
+      <Text style={styles.subtitle}> {t('autenticao_necessria')} </Text>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -96,7 +97,7 @@ export default function LoginScreen() {
         {loading ? (
           <ActivityIndicator color="#000" />
         ) : (
-          <Text style={styles.loginText}>INICIAR SESSÃO</Text>
+          <Text style={styles.loginText}> {t('iniciar_sesso')} </Text>
         )}
       </TouchableOpacity>
 
@@ -106,7 +107,7 @@ export default function LoginScreen() {
         activeOpacity={0.6}
       >
         <Text style={[styles.registerText, { color: currentColors.textSecondary }]}>
-          Não possui credenciais? <Text style={{ color: '#FF0033' }}>Registre-se</Text>
+           {t('no_possui_credenciais')} <Text style={{ color: '#FF0033' }}> {t('registrese')} </Text>
         </Text>
       </TouchableOpacity>
     </View>

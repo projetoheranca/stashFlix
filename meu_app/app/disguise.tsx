@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { registerDevice } from '@/src/services/ApiService';
 import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from "@/src/i18n";
 
 export default function DisguiseScreen() {
   const router = useRouter();
@@ -97,11 +98,11 @@ export default function DisguiseScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={theme.tint} />
         </Pressable>
-        <Text style={[styles.title, { color: theme.text }]}>CAMUFLAGEM & DISFARCE</Text>
+        <Text style={[styles.title, { color: theme.text }]}> {t('camuflagem__disfarce')} </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>MODO DE FACHADA (LOCK SCREEN)</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}> {t('modo_de_fachada_lock_scre')} </Text>
       <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: theme.border + '50' }]}>
         <Pressable 
           style={({ pressed }) => [
@@ -111,7 +112,7 @@ export default function DisguiseScreen() {
           ]} 
           onPress={() => setTutorialMode('none')}
         >
-          <Text style={[styles.optionText, { color: theme.text }]}>Padrão (Cofre Cyberpunk)</Text>
+          <Text style={[styles.optionText, { color: theme.text }]}> {t('padro_cofre_cyberpunk')} </Text>
         </Pressable>
         
         <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
@@ -124,7 +125,7 @@ export default function DisguiseScreen() {
           ]} 
           onPress={() => setTutorialMode('calculator')}
         >
-          <Text style={[styles.optionText, { color: theme.text }]}>Calculadora Falsa</Text>
+          <Text style={[styles.optionText, { color: theme.text }]}> {t('calculadora_falsa')} </Text>
         </Pressable>
         
         <View style={[styles.divider, { backgroundColor: theme.border + '33' }]} />
@@ -158,8 +159,8 @@ export default function DisguiseScreen() {
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <Text style={[styles.optionText, { color: theme.text }]}>Falsa Falha no Sistema (Crash)</Text>
-            <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+            <Text style={[styles.optionText, { color: theme.text }]}> {t('falsa_falha_no_sistema_cr')} </Text>
+            <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
           </View>
         </Pressable>
         
@@ -194,8 +195,8 @@ export default function DisguiseScreen() {
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <Text style={[styles.optionText, { color: theme.text }]}>Disfarce de Navegador Web</Text>
-            <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}>PRO</Text></View>
+            <Text style={[styles.optionText, { color: theme.text }]}> {t('disfarce_de_navegador_web')} </Text>
+            <View style={[styles.proBadge, { backgroundColor: theme.tint }]}><Text style={styles.proText}> {t('pro')} </Text></View>
           </View>
         </Pressable>
       </View>
@@ -205,8 +206,7 @@ export default function DisguiseScreen() {
           <Text style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 30 }]}>{"PALAVRA-CHAVE SECRETA (NAVEGADOR) [PRO]"}</Text>
           <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: theme.tint, borderWidth: 1.5, padding: 20 }]}>
             <Text style={{ color: theme.text, fontFamily: 'Inter_400Regular', marginBottom: 15, opacity: 0.8 }}>
-              Pesquise por esta palavra no buscador fictício para revelar o teclado de desbloqueio:
-            </Text>
+               {t('pesquise_por_esta_palavra')} </Text>
             <TextInput
               style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border, letterSpacing: 2, textAlign: 'center', paddingHorizontal: 15 }]}
               placeholder="Ex: Batman"
@@ -224,7 +224,7 @@ export default function DisguiseScreen() {
               ]} 
               onPress={handleSaveKeyword}
             >
-              <Text style={[styles.saveButtonText, { color: '#FFF' }]}>SALVAR PALAVRA-CHAVE</Text>
+              <Text style={[styles.saveButtonText, { color: '#FFF' }]}> {t('salvar_palavrachave')} </Text>
             </Pressable>
           </View>
         </>
@@ -257,8 +257,7 @@ export default function DisguiseScreen() {
 
                 <Pressable onPress={() => { setTutorialMode(null); setTutorialStep(1); router.push('/help'); }} style={{ marginBottom: 25, alignSelf: 'center' }}>
                   <Text style={{ color: theme.tint, fontFamily: 'Inter_600SemiBold', textDecorationLine: 'underline' }}>
-                    Mais dúvidas? Acesse o módulo de ajuda
-                  </Text>
+                     {t('mais_dvidas_acesse_o_mdul')} </Text>
                 </Pressable>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 15 }}>
@@ -266,7 +265,7 @@ export default function DisguiseScreen() {
                     onPress={() => { setTutorialMode(null); setTutorialStep(1); }} 
                     style={[styles.modalBtn, { backgroundColor: theme.surfaceHighlight }]}
                   >
-                    <Text style={{ color: theme.text, fontFamily: 'Inter_600SemiBold' }}>Cancelar</Text>
+                    <Text style={{ color: theme.text, fontFamily: 'Inter_600SemiBold' }}> {t('cancelar')} </Text>
                   </Pressable>
                   
                   {tutorialMode === 'browser' && tutorialStep === 1 ? (
@@ -274,7 +273,7 @@ export default function DisguiseScreen() {
                       onPress={() => setTutorialStep(2)} 
                       style={[styles.modalBtn, { backgroundColor: theme.tint }]}
                     >
-                      <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold' }}>Avançar</Text>
+                      <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold' }}> {t('avanar')} </Text>
                     </Pressable>
                   ) : (
                     <Pressable 

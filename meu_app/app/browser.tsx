@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import { useRouter } from 'expo-router';
 import { useAppContext } from '@/src/contexts/AppContext';
 import { StatusBar } from 'expo-status-bar';
+import { t } from "@/src/i18n";
 
 export default function StealthBrowser() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function StealthBrowser() {
         />
         
         <TouchableOpacity onPress={handleGo} style={styles.btn}>
-          <Text style={{ color: theme.tint, fontWeight: 'bold' }}>IR</Text>
+          <Text style={{ color: theme.tint, fontWeight: 'bold' }}> {t('ir')} </Text>
         </TouchableOpacity>
       </View>
 

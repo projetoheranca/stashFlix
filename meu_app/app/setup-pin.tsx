@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppContext } from '@/src/contexts/AppContext';
+import { t } from "@/src/i18n";
 
 export default function SetupPinScreen() {
   const router = useRouter();
@@ -24,10 +25,9 @@ export default function SetupPinScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>NOVO PIN</Text>
+      <Text style={[styles.title, { color: theme.text }]}> {t('novo_pin')} </Text>
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-        CADASTRE O CÓDIGO DE ACESSO
-      </Text>
+         {t('cadastre_o_cdigo_de_acess')} </Text>
       
       <View style={styles.display}>
         {[0, 1, 2, 3].map((i) => {
@@ -87,8 +87,7 @@ export default function SetupPinScreen() {
         activeOpacity={0.8}
       >
         <Text style={[styles.buttonText, { color: pin.length === 4 ? '#000' : theme.textSecondary }]}>
-          PROSSEGUIR
-        </Text>
+           {t('prosseguir')} </Text>
       </TouchableOpacity>
     </View>
   );

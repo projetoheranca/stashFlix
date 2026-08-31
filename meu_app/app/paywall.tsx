@@ -11,6 +11,7 @@ import { useAppContext } from '@/src/contexts/AppContext';
 import Purchases from 'react-native-purchases';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from "@/src/i18n";
 
 const { width } = Dimensions.get('window');
 
@@ -199,10 +200,10 @@ export default function PaywallScreen() {
 
       <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 40, width: '100%' }}>
         <Text style={[styles.title, selectedTier === 'ULTRA' && { color: '#00FFCC' }]}>
-          UPGRADE PARA O {selectedTier}
+           {t('upgrade_para_o')} {selectedTier}
         </Text>
         <Animated.Text style={[styles.titleGlow, pulseStyle, selectedTier === 'ULTRA' && { color: '#00FFCC', textShadowColor: 'rgba(0,255,200,0.9)' }]}>
-          UPGRADE PARA O {selectedTier}
+           {t('upgrade_para_o')} {selectedTier}
         </Animated.Text>
       </View>
 
@@ -212,13 +213,13 @@ export default function PaywallScreen() {
           style={[styles.toggleBtn, selectedTier === 'PRO' && styles.toggleBtnActivePRO]}
           onPress={() => setSelectedTier('PRO')}
         >
-          <Text style={[styles.toggleText, selectedTier === 'PRO' && { color: '#000' }]}>PRO</Text>
+          <Text style={[styles.toggleText, selectedTier === 'PRO' && { color: '#000' }]}> {t('pro')} </Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.toggleBtn, selectedTier === 'ULTRA' && styles.toggleBtnActiveULTRA]}
           onPress={() => setSelectedTier('ULTRA')}
         >
-          <Text style={[styles.toggleText, selectedTier === 'ULTRA' && { color: '#000' }]}>ULTRA</Text>
+          <Text style={[styles.toggleText, selectedTier === 'ULTRA' && { color: '#000' }]}> {t('ultra')} </Text>
         </TouchableOpacity>
       </View>
 
@@ -246,14 +247,14 @@ export default function PaywallScreen() {
           style={[styles.toggleBtn, { borderWidth: 1, borderColor: selectedPeriod === 'MENSAL' ? theme.tint : '#333', backgroundColor: selectedPeriod === 'MENSAL' ? 'rgba(255,255,255,0.1)' : 'transparent' }]}
           onPress={() => setSelectedPeriod('MENSAL')}
         >
-          <Text style={[styles.toggleText, { color: selectedPeriod === 'MENSAL' ? '#FFF' : '#888' }]}>MENSAL</Text>
+          <Text style={[styles.toggleText, { color: selectedPeriod === 'MENSAL' ? '#FFF' : '#888' }]}> {t('mensal')} </Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={[styles.toggleBtn, { borderWidth: 1, borderColor: selectedPeriod === 'ANUAL' ? theme.tint : '#333', backgroundColor: selectedPeriod === 'ANUAL' ? 'rgba(255,255,255,0.1)' : 'transparent' }]}
           onPress={() => setSelectedPeriod('ANUAL')}
         >
-          <Text style={[styles.toggleText, { color: selectedPeriod === 'ANUAL' ? '#FFF' : '#888' }]}>ANUAL</Text>
+          <Text style={[styles.toggleText, { color: selectedPeriod === 'ANUAL' ? '#FFF' : '#888' }]}> {t('anual')} </Text>
         </TouchableOpacity>
       </View>
 
@@ -265,24 +266,24 @@ export default function PaywallScreen() {
           disabled={loading}
         >
           <Animated.View style={[styles.shimmer, shimmerStyle]} />
-          <Text style={styles.buttonText}>ASSINAR {selectedTier} ({selectedPeriod})</Text>
+          <Text style={styles.buttonText}> {t('assinar')} {selectedTier} ({selectedPeriod})</Text>
         </TouchableOpacity>
       </View>
       
       <TouchableOpacity onPress={handleStartTrial} disabled={loading} style={{ marginTop: 25 }}>
-        <Text style={styles.footerText}>Iniciar Teste Gratuito de 7 Dias</Text>
+        <Text style={styles.footerText}> {t('iniciar_teste_gratuito_de')} </Text>
       </TouchableOpacity>
       
       <TouchableOpacity onPress={handleRestore} disabled={loading} style={{ marginTop: 15 }}>
-        <Text style={[styles.footerText, { color: '#888', textDecorationLine: 'underline', marginTop: 0 }]}>Restaurar Compras</Text>
+        <Text style={[styles.footerText, { color: '#888', textDecorationLine: 'underline', marginTop: 0 }]}> {t('restaurar_compras')} </Text>
       </TouchableOpacity>
 
       <View style={{ flexDirection: 'row', gap: 15, marginTop: 15 }}>
         <TouchableOpacity onPress={() => Linking.openURL('https://stashflix.app/terms.html')}>
-          <Text style={[styles.footerText, { fontSize: 10, color: '#555', marginTop: 0 }]}>Termos de Uso</Text>
+          <Text style={[styles.footerText, { fontSize: 10, color: '#555', marginTop: 0 }]}> {t('termos_de_uso')} </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => Linking.openURL('https://stashflix.app/privacy.html')}>
-          <Text style={[styles.footerText, { fontSize: 10, color: '#555', marginTop: 0 }]}>Política de Privacidade</Text>
+          <Text style={[styles.footerText, { fontSize: 10, color: '#555', marginTop: 0 }]}> {t('poltica_de_privacidade')} </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

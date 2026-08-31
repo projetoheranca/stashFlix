@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useAppContext } from '@/src/contexts/AppContext';
+import { t } from "@/src/i18n";
 
 export default function AdBanner() {
   const { userPlan } = useAppContext();
@@ -12,7 +13,7 @@ export default function AdBanner() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Anúncio (AdMob Placeholder)</Text>
+      <Text style={styles.text}> {t('anncio_admob_placeholder')} </Text>
     </View>
   );
 }

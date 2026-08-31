@@ -8,6 +8,7 @@ import { syncSettingsToCloud } from '@/src/services/FirebaseDB';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import { getAlbums, createAlbum, importToAlbum, deleteAlbum } from '@/src/services/VaultService';
+import { t } from "@/src/i18n";
 
 export default function DecoyScreen() {
   const router = useRouter();
@@ -209,8 +210,7 @@ export default function DecoyScreen() {
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{"// 01. CONFIGURAÇÃO DO PIN FALSO"}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
         <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-          Defina a senha de 4 dígitos para abrir o cofre falso em caso de coação.
-        </Text>
+           {t('defina_a_senha_de_4_dgito')} </Text>
         <View style={styles.inputContainer}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.background, color: theme.tint, borderColor: theme.border + '50', flex: 1, marginBottom: 0, marginRight: 10 }]}
@@ -237,22 +237,20 @@ export default function DecoyScreen() {
           ]} 
           onPress={handleSaveFakePin}
         >
-          <Text style={[styles.saveButtonText, { color: theme.tint }]}>SALVAR PIN FALSO</Text>
+          <Text style={[styles.saveButtonText, { color: theme.tint }]}> {t('salvar_pin_falso')} </Text>
         </Pressable>
       </View>
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 30 }]}>{"// 02. EXPLORADOR DE ARQUIVOS ISCA"}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: theme.border + '33' }]}>
         <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-          Estas são as pastas que aparecerão ao digitar o PIN Falso.
-        </Text>
+           {t('estas_so_as_pastas_que_ap')} </Text>
         
         {decoyAlbums.length === 0 ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
             <Ionicons name="folder-open-outline" size={32} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 10 }} />
             <Text style={{ color: theme.textSecondary, fontSize: 12, textAlign: 'center', opacity: 0.7 }}>
-              O cofre isca está vazio. Importe pastas fictícias para enganar invasores.
-            </Text>
+               {t('o_cofre_isca_est_vazio_im')} </Text>
           </View>
         ) : (
           decoyAlbums.map((album) => (
@@ -293,7 +291,7 @@ export default function DecoyScreen() {
               onPress={() => setIsCreatingFolder(true)}
             >
               <Ionicons name="add-circle-outline" size={16} color="#00FF66" style={{ marginRight: 8 }} />
-              <Text style={[styles.saveButtonText, { color: '#00FF66' }]}>CRIAR PASTA VAZIA</Text>
+              <Text style={[styles.saveButtonText, { color: '#00FF66' }]}> {t('criar_pasta_vazia')} </Text>
             </Pressable>
           ) : (
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
@@ -324,9 +322,8 @@ export default function DecoyScreen() {
       <View style={[styles.card, { backgroundColor: theme.surface + '80', borderColor: '#FF0033' + '50', borderWidth: 1.5 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={[styles.infoText, { color: theme.textSecondary, flex: 1, marginBottom: 0 }]}>
-            PIN fatal de ameaça. Ele abrirá as pastas de isca, porém apagará permanentemente todo o cofre original de forma silenciosa.
-          </Text>
-          <View style={[styles.proBadge, { backgroundColor: theme.tint, marginLeft: 10 }]}><Text style={styles.proText}>PRO</Text></View>
+             {t('pin_fatal_de_ameaa_ele_ab')} </Text>
+          <View style={[styles.proBadge, { backgroundColor: theme.tint, marginLeft: 10 }]}><Text style={styles.proText}> {t('pro')} </Text></View>
         </View>
         
         <View style={styles.inputContainer}>
@@ -369,7 +366,7 @@ export default function DecoyScreen() {
           }}
         >
           <Ionicons name="skull-outline" size={16} color="#FF0033" style={{ marginRight: 8 }} />
-          <Text style={[styles.saveButtonText, { color: '#FF0033' }]}>SALVAR PIN KAMIKAZE</Text>
+          <Text style={[styles.saveButtonText, { color: '#FF0033' }]}> {t('salvar_pin_kamikaze')} </Text>
         </Pressable>
       </View>
       

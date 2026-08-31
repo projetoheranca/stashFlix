@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from '@/src/services/SecureStoreManager';
 import { useAppContext } from '@/src/contexts/AppContext';
+import { t } from "@/src/i18n";
 
 export default function ConfirmPinScreen() {
   const router = useRouter();
@@ -46,10 +47,9 @@ export default function ConfirmPinScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>CONFIRMAR PIN</Text>
+      <Text style={[styles.title, { color: theme.text }]}> {t('confirmar_pin')} </Text>
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-        DIGITE O PIN NOVAMENTE PARA CONFIRMAR
-      </Text>
+         {t('digite_o_pin_novamente_pa')} </Text>
       
       <View style={styles.display}>
         {[0, 1, 2, 3].map((i) => {
@@ -109,8 +109,7 @@ export default function ConfirmPinScreen() {
         activeOpacity={0.8}
       >
         <Text style={[styles.buttonText, { color: pin.length === 4 ? '#000' : theme.textSecondary }]}>
-          CONFIRMAR
-        </Text>
+           {t('confirmar')} </Text>
       </TouchableOpacity>
     </View>
   );
