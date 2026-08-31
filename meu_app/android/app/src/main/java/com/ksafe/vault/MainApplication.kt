@@ -1,4 +1,4 @@
-package com.helloworld
+package com.ksafe.vault
 
 import android.app.Application
 import android.content.res.Configuration
