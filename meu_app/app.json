@@ -74,14 +74,7 @@
           "microphonePermission": "Permita o acesso ao microfone para gravar o áudio do ambiente em caso de invasão."
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "2.3.0"
-          }
-        }
-      ],
+      "expo-build-properties",
       "expo-font",
       "expo-web-browser",
       [
